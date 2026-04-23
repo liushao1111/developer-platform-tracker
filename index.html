@@ -155,6 +155,29 @@
   .blocker-prompt-input:focus { border-color: #dc2626; }
   .blocker-prompt-footer { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
 
+  /* Roadmap */
+  .roadmap { margin-bottom: 1.5rem; }
+  .roadmap-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 12px; }
+  .roadmap-track { display: flex; align-items: stretch; gap: 0; overflow-x: auto; padding-bottom: 4px; }
+  .roadmap-track::-webkit-scrollbar { height: 4px; }
+  .roadmap-track::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .phase { flex: 1; min-width: 130px; position: relative; }
+  .phase-connector { position: absolute; top: 18px; left: 0; right: 0; height: 2px; background: var(--border); z-index: 0; }
+  .phase:first-child .phase-connector { left: 50%; }
+  .phase:last-child .phase-connector { right: 50%; }
+  .phase-dot-wrap { display: flex; justify-content: center; position: relative; z-index: 1; margin-bottom: 10px; }
+  .phase-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid; flex-shrink: 0; background: var(--surface); }
+  .phase-body { padding: 0 8px; text-align: center; }
+  .phase-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+  .phase-date { font-size: 11px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .phase-milestone { font-size: 11px; color: var(--text2); line-height: 1.4; margin-bottom: 4px; }
+  .phase-owner { font-size: 10px; color: var(--text3); }
+  .phase-now { }
+  .phase-now .phase-dot { background: #2563eb; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.2); }
+  .phase-done .phase-dot { background: #16a34a; border-color: #16a34a; }
+  .phase-done .phase-connector { background: #16a34a; }
+  .phase-upcoming .phase-dot { border-color: var(--border2); }
+
   /* Legend */
   .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); }
@@ -190,6 +213,11 @@
       <span class="chip chip-amber" id="chip-inprogress">0 in progress</span>
       <span class="chip chip-green" id="chip-done">0 done</span>
     </div>
+  </div>
+
+  <div class="roadmap">
+    <div class="roadmap-title">2026 Platform Roadmap</div>
+    <div class="roadmap-track" id="roadmap-track"></div>
   </div>
 
   <div class="blockers-panel" id="blockers-panel" style="display:none;">
@@ -814,6 +842,41 @@ document.getElementById('modal-save').addEventListener('click', () => {
   closeModal();
   renderAll();
 });
+
+// Roadmap
+const PHASES = [
+  { label: 'Phase 1', date: 'May 12, 2026', milestone: 'SaaStr — Developer platform beta launch', owners: 'Lucas', state: 'now' },
+  { label: 'Phase 2', date: 'Jun 2026', milestone: 'GA + Billing live for Developer Platform', owners: 'Lucas', state: 'upcoming' },
+  { label: 'Phase 3', date: 'Jul 2026', milestone: 'Sigma device launch — SDK ready on ship day. Voice API alpha launches.', owners: 'Lucas', state: 'upcoming' },
+  { label: 'Phase 4', date: 'Aug–Oct 2026', milestone: 'Voice API public beta — enterprise only', owners: 'Hayden / Lucas', state: 'upcoming' },
+  { label: 'Phase 5', date: 'Oct 2026', milestone: 'Bidirectional voice streaming + Capture SDK. Beyond Recall.ai.', owners: '', state: 'upcoming' },
+  { label: 'Phase 6', date: 'Nov–Dec 2026', milestone: 'Gamma device launch — voice + camera SDK. Vision AI joins Voice API.', owners: 'Lucas', state: 'upcoming' },
+  { label: 'Phase 7', date: 'Dec 2026', milestone: 'Voice API public launch', owners: 'Hayden', state: 'upcoming' },
+];
+
+const PHASE_COLORS = ['#2563eb','#7c3aed','#0891b2','#d97706','#db2777','#16a34a','#6366f1'];
+
+(function renderRoadmap() {
+  const track = document.getElementById('roadmap-track');
+  PHASES.forEach((p, i) => {
+    const color = PHASE_COLORS[i];
+    const el = document.createElement('div');
+    el.className = `phase phase-${p.state}`;
+    el.innerHTML = `
+      <div class="phase-connector" style="${p.state === 'done' ? 'background:' + color : ''}"></div>
+      <div class="phase-dot-wrap">
+        <div class="phase-dot" style="border-color:${color};${p.state !== 'upcoming' ? 'background:' + color + ';box-shadow:0 0 0 3px ' + color + '33' : ''}"></div>
+      </div>
+      <div class="phase-body">
+        <div class="phase-label" style="color:${color};">${p.label}</div>
+        <div class="phase-date">${p.date}</div>
+        <div class="phase-milestone">${p.milestone}</div>
+        ${p.owners ? `<div class="phase-owner">${p.owners}</div>` : ''}
+      </div>
+    `;
+    track.appendChild(el);
+  });
+})();
 
 renderAll();
 </script>
