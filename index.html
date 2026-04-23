@@ -307,6 +307,16 @@
 <script>
 const STREAMS = [
   {
+    id: 'pm', name: 'Strategy / Product Decision', color: '#0f766e', tagBg: '#ccfbf1', tagText: '#134e4a',
+    tasks: [
+      { label: 'Define launch scope and success metrics for May 12 beta', status: 'todo', owner: 'Aubrey', due: '4/27' },
+      { label: 'Finalize gated beta access model and waitlist flow', status: 'todo', owner: 'Aubrey', due: '4/27' },
+      { label: 'Write PRD for Developer Console v1', status: 'todo', owner: 'Aubrey', due: '4/30' },
+      { label: 'Coordinate cross-team launch readiness check (Eng, Design, GTM, Legal)', status: 'todo', owner: 'Aubrey', due: '5/9' },
+      { label: 'Collect and triage beta customer feedback post-launch', status: 'todo', owner: 'Aubrey', due: '5/15' },
+    ]
+  },
+  {
     id: 'design', name: 'Design', color: '#7c3aed', tagBg: '#ede9fe', tagText: '#4c1d95',
     tasks: [
       { label: 'UX design — developer platform', status: 'done', owner: 'Nika' },
@@ -388,7 +398,7 @@ const STREAMS = [
   },
 ];
 
-const STORAGE_KEY = 'plaud-tracker-v5';
+const STORAGE_KEY = 'plaud-tracker-v6';
 
 // Restore tasks from localStorage, preserving stream metadata (colors etc.)
 (function restoreFromStorage() {
