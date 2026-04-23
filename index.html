@@ -599,28 +599,27 @@ function renderAll() {
 
       const check = document.createElement('div');
       check.className = `check check-${t.status}`;
+      check.style.cursor = 'pointer';
+      check.addEventListener('click', e => {
+        e.stopPropagation();
+        const st = streamFor(stream.id);
+        st.tasks[i].status = CYCLE[st.tasks[i].status] || 'todo';
+        if (st.tasks[i].status !== 'blocked') delete st.tasks[i].blocker;
+        saveToStorage();
+        renderAll();
+      });
 
       const label = document.createElement('div');
       label.className = `task-label${t.status === 'done' ? ' task-label-done' : t.status === 'blocked' ? ' task-label-blocked' : ''}`;
       label.textContent = t.label;
-      label.title = 'Double-click to edit task name';
-      label.addEventListener('dblclick', e => {
+      label.title = 'Click to edit task name';
+      label.addEventListener('click', e => {
         e.stopPropagation();
-        // Capture caret offset at the exact click point
-        let caretOffset = t.label.length;
-        if (document.caretRangeFromPoint) {
-          const range = document.caretRangeFromPoint(e.clientX, e.clientY);
-          if (range) caretOffset = range.startOffset;
-        } else if (document.caretPositionFromPoint) {
-          const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
-          if (pos) caretOffset = pos.offset;
-        }
         const input = document.createElement('input');
         input.className = 'task-label-input';
         input.value = t.label;
         label.replaceWith(input);
         input.focus();
-        input.setSelectionRange(caretOffset, caretOffset);
         function commit() {
           const val = input.value.trim();
           if (val) streamFor(stream.id).tasks[i].label = val;
@@ -717,13 +716,6 @@ function renderAll() {
       row.appendChild(dueEl);
       row.appendChild(meta);
 
-      row.addEventListener('click', () => {
-        const st = streamFor(row.dataset.stream);
-        const idx = parseInt(row.dataset.idx);
-        st.tasks[idx].status = CYCLE[st.tasks[idx].status] || 'todo';
-        if (st.tasks[idx].status !== 'blocked') delete st.tasks[idx].blocker;
-        renderAll();
-      });
       row.addEventListener('contextmenu', e => {
         e.preventDefault();
         openCtxMenu(e.clientX, e.clientY, stream.id, i);
