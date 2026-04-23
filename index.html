@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plaud Developer Platform — Launch Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --surface2: #f2f1ee;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --text: #1a1a18;
+    --text2: #6b6b66;
+    --text3: #9a9a94;
+    --red-bg: #fef2f2; --red-border: #fca5a5; --red-text: #7f1d1d; --red-dot: #ef4444;
+    --amber-bg: #fffbeb; --amber-border: #fcd34d; --amber-text: #78350f;
+    --green-bg: #f0fdf4; --green-border: #86efac; --green-text: #14532d;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  body {
+    font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1.5rem;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .page { max-width: 1080px; margin: 0 auto; }
+
+  /* Header */
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 1.5rem; }
+  .page-title { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+  .page-sub { font-size: 13px; color: var(--text2); margin-top: 3px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .chip { font-size: 11px; font-weight: 600; padding: 4px 11px; border-radius: 20px; border: 1px solid; letter-spacing: 0.02em; }
+  .chip-red { background: var(--red-bg); border-color: var(--red-border); color: var(--red-text); }
+  .chip-amber { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber-text); }
+  .chip-green { background: var(--green-bg); border-color: var(--green-border); color: var(--green-text); }
+
+  /* Blockers panel */
+  .blockers-panel { background: var(--red-bg); border: 1px solid var(--red-border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 1.5rem; }
+  .blockers-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--red-text); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .blockers-label::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--red-dot); }
+  .blocker-row { display: flex; align-items: flex-start; gap: 10px; padding: 5px 0; border-top: 1px solid rgba(239,68,68,0.15); }
+  .blocker-row:first-of-type { border-top: none; }
+  .blocker-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red-dot); margin-top: 6px; flex-shrink: 0; }
+  .blocker-desc { font-size: 13px; color: #991b1b; flex: 1; }
+  .blocker-owner { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 20px; background: #fca5a5; color: var(--red-text); white-space: nowrap; flex-shrink: 0; }
+
+  /* Filter pills */
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .filter-pill { font-size: 12px; font-weight: 500; padding: 5px 13px; border-radius: 20px; border: 1px solid var(--border2); background: var(--surface); color: var(--text2); cursor: pointer; transition: all 0.1s; }
+  .filter-pill:hover { border-color: var(--text3); color: var(--text); }
+  .filter-pill.active { background: var(--text); border-color: var(--text); color: #fff; }
+
+  /* Task list */
+  .task-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .stream-header { display: flex; align-items: center; gap: 10px; padding: 10px 16px 8px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .stream-header.hidden { display: none; }
+  .stream-header-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .stream-header-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text2); flex: 1; }
+  .stream-header-count { font-size: 11px; color: var(--text3); font-variant-numeric: tabular-nums; }
+  .stream-progress { height: 2px; background: var(--border); margin: 0; }
+  .stream-progress.hidden { display: none; }
+  .stream-progress-fill { height: 2px; transition: width 0.3s ease; }
+  .task-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 16px; cursor: pointer; transition: background 0.1s; border-bottom: 1px solid var(--border); }
+  .task-row:hover { background: var(--surface2); }
+  .task-row.hidden { display: none; }
+
+  .check { width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; }
+  .check-done { border-color: #16a34a; background: #16a34a; }
+  .check-done::after { content: ''; width: 8px; height: 4px; border-left: 1.5px solid #fff; border-bottom: 1.5px solid #fff; transform: rotate(-45deg) translate(1px,-1px); display: block; }
+  .check-inprogress { border-color: #2563eb; background: transparent; }
+  .check-inprogress::after { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #2563eb; display: block; }
+  .check-blocked { border-color: #dc2626; background: transparent; }
+  .check-blocked::after { content: ''; width: 1.5px; height: 8px; background: #dc2626; border-radius: 1px; display: block; margin: 0 auto; }
+  .check-todo { border-color: var(--border2); background: transparent; }
+
+  .task-label { font-size: 13px; width: 280px; min-width: 180px; line-height: 1.45; color: var(--text); flex-shrink: 0; }
+  .task-label-done { color: var(--text3); text-decoration: line-through; }
+  .task-label-blocked { color: #991b1b; }
+  .task-desc { font-size: 12px; flex: 1; color: var(--text2); line-height: 1.45; cursor: text; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .task-desc:hover { color: var(--text); }
+  .task-desc.empty { color: var(--text3); font-style: italic; }
+  .task-desc.empty:hover { color: var(--text2); }
+  .task-desc-input { font-size: 12px; flex: 1; min-width: 0; color: var(--text); background: transparent; border: none; border-bottom: 1.5px solid #3b82f6; outline: none; font-family: inherit; padding: 0; width: 100%; }
+
+  .task-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-top: 1px; }
+  .task-tag { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+  .task-owner { font-size: 10px; padding: 2px 7px; border-radius: 20px; background: var(--surface2); color: var(--text2); border: 1px solid var(--border); white-space: nowrap; font-weight: 500; cursor: text; }
+  .task-owner:hover { border-color: #3b82f6; color: var(--text); }
+  .owner-input { font-size: 10px; padding: 1px 6px; border-radius: 20px; background: var(--surface); color: var(--text); border: 1.5px solid #3b82f6; font-family: inherit; font-weight: 500; outline: none; width: 90px; }
+  .assign-btn { font-size: 10px; padding: 2px 7px; border-radius: 20px; background: var(--surface2); color: var(--text3); border: 1px dashed var(--border2); white-space: nowrap; font-weight: 500; cursor: pointer; }
+  .assign-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+  .blocker-desc { font-size: 13px; color: #991b1b; flex: 1; cursor: text; }
+  .blocker-desc:hover { text-decoration: underline dotted #dc2626; }
+  .blocker-input { font-size: 13px; color: #991b1b; flex: 1; background: transparent; border: none; border-bottom: 1.5px solid #dc2626; outline: none; font-family: inherit; padding: 0; width: 100%; }
+
+  .add-row { padding: 8px 16px; }
+  .add-btn { font-size: 12px; color: var(--text3); background: none; border: none; cursor: pointer; font-family: inherit; padding: 0; transition: color 0.1s; }
+  .add-btn:hover { color: var(--text2); }
+
+  /* Context menu */
+  .ctx-menu { position: fixed; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-sm); box-shadow: 0 4px 16px rgba(0,0,0,0.13); z-index: 200; min-width: 148px; padding: 4px 0; display: none; }
+  .ctx-menu.open { display: block; }
+  .ctx-item { display: flex; align-items: center; gap: 8px; padding: 7px 14px; font-size: 12px; cursor: pointer; color: var(--text); transition: background 0.1s; }
+  .ctx-item:hover { background: var(--surface2); }
+  .ctx-item .ctx-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .ctx-item.active { font-weight: 600; }
+
+  /* Blocker prompt */
+  .blocker-prompt { position: fixed; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 210; padding: 14px 16px; width: 300px; display: none; }
+  .blocker-prompt.open { display: block; }
+  .blocker-prompt-label { font-size: 11px; color: var(--text2); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+  .blocker-prompt-input { width: 100%; padding: 6px 9px; font-size: 13px; border: 1px solid var(--border2); border-radius: var(--radius-sm); font-family: inherit; outline: none; color: var(--text); }
+  .blocker-prompt-input:focus { border-color: #dc2626; }
+  .blocker-prompt-footer { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
+
+  /* Legend */
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); }
+  .leg-swatch { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+
+  /* Modal */
+  .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 100; align-items: center; justify-content: center; }
+  .modal-backdrop.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 20px; width: 380px; max-width: 90vw; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .modal-title { font-size: 15px; font-weight: 600; }
+  .modal-x { background: none; border: none; font-size: 16px; color: var(--text2); cursor: pointer; line-height: 1; }
+  .modal-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; margin-top: 10px; }
+  .modal-input, .modal-select { width: 100%; padding: 7px 10px; font-size: 13px; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font-family: inherit; outline: none; }
+  .modal-input:focus, .modal-select:focus { border-color: #3b82f6; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .btn { padding: 7px 16px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid; cursor: pointer; font-family: inherit; font-weight: 500; }
+  .btn-ghost { background: transparent; border-color: var(--border2); color: var(--text2); }
+  .btn-primary { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+  .btn-primary:hover { background: #1e40af; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">Developer Platform</div>
+      <div class="page-sub">Design · Engineering · Docs · GTM · Release · Enablement</div>
+    </div>
+    <div class="chips">
+      <span class="chip chip-red" id="chip-blocked">0 blockers</span>
+      <span class="chip chip-amber" id="chip-inprogress">0 in progress</span>
+      <span class="chip chip-green" id="chip-done">0 done</span>
+    </div>
+  </div>
+
+  <div class="blockers-panel" id="blockers-panel" style="display:none;">
+    <div class="blockers-label">Open blockers</div>
+    <div id="blockers-list"></div>
+  </div>
+
+  <div class="filters" id="filters"></div>
+
+  <div class="task-panel" id="task-panel">
+    <div id="task-list"></div>
+    <div class="add-row">
+      <button class="add-btn" id="add-task-btn">+ add task</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="leg-swatch" style="background:#16a34a;"></div>Done</div>
+    <div class="legend-item"><div class="leg-swatch" style="background:#2563eb;"></div>In progress</div>
+    <div class="legend-item"><div class="leg-swatch" style="background:#dc2626;"></div>Blocked</div>
+    <div class="legend-item"><div class="leg-swatch" style="background:#d1d5db;"></div>To do</div>
+  </div>
+</div>
+
+<!-- Context menu -->
+<div class="ctx-menu" id="ctx-menu">
+  <div class="ctx-item" data-status="todo"><span class="ctx-dot" style="background:#d1d5db;border:1.5px solid #9ca3af;"></span>To do</div>
+  <div class="ctx-item" data-status="inprogress"><span class="ctx-dot" style="background:#2563eb;"></span>In progress</div>
+  <div class="ctx-item" data-status="done"><span class="ctx-dot" style="background:#16a34a;"></span>Done</div>
+  <div class="ctx-item" data-status="blocked"><span class="ctx-dot" style="background:#dc2626;"></span>Blocked…</div>
+</div>
+
+<!-- Blocker prompt -->
+<div class="blocker-prompt" id="blocker-prompt">
+  <div class="blocker-prompt-label">What's blocking this?</div>
+  <input class="blocker-prompt-input" id="blocker-prompt-input" placeholder="Describe the blocker…" />
+  <div class="blocker-prompt-footer">
+    <button class="btn btn-ghost" id="blocker-prompt-cancel">Cancel</button>
+    <button class="btn btn-primary" id="blocker-prompt-save">Mark blocked</button>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add task</div>
+      <button class="modal-x" id="modal-x">✕</button>
+    </div>
+    <div class="modal-label">Task name</div>
+    <input class="modal-input" id="m-name" placeholder="e.g. Finalize API reference" />
+    <div class="modal-label">Description <span style="font-weight:400;color:var(--text3);">(optional)</span></div>
+    <input class="modal-input" id="m-desc" placeholder="Additional context or notes" />
+    <div class="modal-label">Stream</div>
+    <select class="modal-select" id="m-stream"></select>
+    <div class="modal-label">Owner</div>
+    <input class="modal-input" id="m-owner" placeholder="Name or handle" />
+    <div class="modal-label">Status</div>
+    <select class="modal-select" id="m-status">
+      <option value="todo">To do</option>
+      <option value="inprogress">In progress</option>
+      <option value="done">Done</option>
+      <option value="blocked">Blocked</option>
+    </select>
+    <div class="modal-label" id="m-blocker-label" style="display:none;">Blocker description</div>
+    <input class="modal-input" id="m-blocker" placeholder="What's blocking this?" style="display:none;margin-top:0;" />
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="modal-save">Add task</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STREAMS = [
+  {
+    id: 'design', name: 'Design', color: '#7c3aed', tagBg: '#ede9fe', tagText: '#4c1d95',
+    tasks: [
+      { label: 'MCP/CLI landing page', status: 'done', owner: 'Brian' },
+      { label: 'SDK docs visual system', status: 'inprogress', owner: 'Brian' },
+      { label: 'Hackathon event page', status: 'done', owner: 'Brian' },
+      { label: 'Developer portal UI kit', status: 'todo', owner: '' },
+      { label: 'Align template app design with Nika, finalize before May 12', status: 'todo', owner: 'Nika' },
+      { label: 'Design freeze: template app, console & docs (deadline Apr 8, Nika PTO)', status: 'blocked', owner: 'Nika', blocker: 'Hard deadline Apr 8 before Nika PTO — all designs must be finalized' },
+    ]
+  },
+  {
+    id: 'eng', name: 'Engineering', color: '#2563eb', tagBg: '#dbeafe', tagText: '#1e3a8a',
+    tasks: [
+      { label: 'MCP stdio transport', status: 'done', owner: 'Nathan' },
+      { label: 'HTTP transport (remote agents)', status: 'blocked', owner: 'Nathan', blocker: 'Auth design decision pending — Nathan + Yijia' },
+      { label: 'plaud-mcp setup command', status: 'done', owner: 'Nathan' },
+      { label: 'OAuth browser flow', status: 'inprogress', owner: 'Nathan' },
+      { label: 'SDK v1 package publish', status: 'inprogress', owner: 'Nathan' },
+      { label: 'Claude Code integration test', status: 'todo', owner: '' },
+      { label: 'Finalize pricing page [P0]', status: 'todo', owner: '' },
+      { label: 'Waitlist page: rename to "Get early access" [P0]', status: 'todo', owner: '' },
+      { label: 'Device SDK page: fix code snippets & SDK compat, replace "coming soon" with starter app module [P0]', status: 'todo', owner: '' },
+      { label: 'Transcription page: remove webhooks, add evals from Steven [P0]', status: 'todo', owner: 'Steven' },
+      { label: 'Cross-platform starter app (scan > pair > record > transcript)', status: 'todo', owner: 'Nika', blocker: 'Design alignment with Nika required; must finalize before May 12 launch' },
+      { label: 'Draft 6 skill files (search-recordings, synthesize-corpus, etc.)', status: 'todo', owner: '' },
+      { label: 'Create skill.md manifest', status: 'todo', owner: '' },
+      { label: 'Routing tests for 20 sample queries', status: 'todo', owner: '' },
+      { label: 'Team workspace: address account-level vs workspace-level consent gap', status: 'blocked', owner: '', blocker: 'Admin approval workflow gap blocks OAuth/MCP/CLI for all Team users; must resolve before May 12' },
+      { label: 'Resolve admin approval workflow for Team workspace release', status: 'todo', owner: '' },
+      { label: 'Kick off penetration tests', status: 'todo', owner: '' },
+      { label: 'Kick off SOC 2 compliance audit', status: 'todo', owner: '' },
+      { label: 'Review pen test & SOC 2 results before public launch', status: 'todo', owner: '' },
+    ]
+  },
+  {
+    id: 'docs', name: 'Documentation', color: '#16a34a', tagBg: '#dcfce7', tagText: '#14532d',
+    tasks: [
+      { label: 'Quickstart guide (MCP + CLI)', status: 'inprogress', owner: 'Aubrey' },
+      { label: 'API reference — 4 Skills', status: 'todo', owner: '' },
+      { label: 'Authentication guide', status: 'blocked', owner: 'Aubrey', blocker: 'Waiting on OAuth flow finalization from Eng' },
+      { label: 'Changelog & release notes', status: 'todo', owner: '' },
+    ]
+  },
+  {
+    id: 'gtm', name: 'GTM', color: '#d97706', tagBg: '#fef3c7', tagText: '#78350f',
+    tasks: [
+      { label: 'Launch blog post draft', status: 'inprogress', owner: 'Aubrey' },
+      { label: 'Hackathon S01 wrap-up comms', status: 'inprogress', owner: 'Aubrey' },
+      { label: 'Dev community announcement', status: 'todo', owner: '' },
+      { label: 'Product Hunt launch brief', status: 'todo', owner: '' },
+      { label: 'Schedule internal hackathon (Apr 15-18, post-internal launch)', status: 'todo', owner: '' },
+      { label: 'Send all-hands hackathon invites', status: 'todo', owner: '' },
+      { label: 'Prepare 1-pager with use cases for hackathon', status: 'todo', owner: '' },
+      { label: 'Set up output collection for employee submissions', status: 'todo', owner: '' },
+      { label: 'Public launch (Apr 30): deploy in-app banner', status: 'todo', owner: '' },
+      { label: 'Public launch: push notifications to power users', status: 'todo', owner: '' },
+      { label: 'Public launch: targeted emails to Starter/Pro/Unlimited users with use case examples', status: 'todo', owner: '' },
+      { label: 'Draft "Introducing the Plaud Developer Platform" blog post (publish May 15)', status: 'todo', owner: 'Aubrey' },
+      { label: 'Schedule LinkedIn posts for May 12', status: 'todo', owner: 'Aubrey' },
+      { label: 'Schedule Twitter/X posts for May 12', status: 'todo', owner: 'Aubrey' },
+      { label: 'SaaStr: confirm booth/demo slot for May 12', status: 'todo', owner: '' },
+      { label: 'SaaStr: provision demo devices', status: 'todo', owner: '' },
+      { label: 'SaaStr: prepare sales deck with dev platform capabilities & pricing', status: 'todo', owner: '' },
+    ]
+  },
+  {
+    id: 'release', name: 'Release tasks', color: '#db2777', tagBg: '#fce7f3', tagText: '#831843',
+    tasks: [
+      { label: 'Internal go/no-go review', status: 'todo', owner: 'Yijia' },
+      { label: 'Legal / privacy sign-off', status: 'blocked', owner: 'Yijia', blocker: 'Legal review not yet scheduled — Yijia to push' },
+      { label: 'Final release approval', status: 'todo', owner: 'Yijia' },
+      { label: 'Support 5 business customers (e.g. Broadside Wealth) with OAuth beta accounts', status: 'todo', owner: '' },
+      { label: 'Handle voice profile feature requests from OAuth beta customers', status: 'todo', owner: '' },
+    ]
+  },
+  {
+    id: 'enablement', name: 'Customer enablement', color: '#0891b2', tagBg: '#cffafe', tagText: '#164e63',
+    tasks: [
+      { label: 'In-app onboarding flow', status: 'done', owner: 'Brian' },
+      { label: 'Developer FAQ page', status: 'todo', owner: '' },
+      { label: 'Support runbook for MCP issues', status: 'todo', owner: '' },
+    ]
+  },
+];
+
+const CYCLE = { todo: 'inprogress', inprogress: 'done', done: 'todo', blocked: 'todo' };
+let activeFilter = 'all';
+
+// Flatten all tasks with stream reference
+function allTasks() {
+  return STREAMS.flatMap(s => s.tasks.map((t, i) => ({ ...t, streamId: s.id, idx: i })));
+}
+
+function stats() {
+  const all = allTasks();
+  return {
+    blocked: all.filter(t => t.status === 'blocked').length,
+    inprogress: all.filter(t => t.status === 'inprogress').length,
+    done: all.filter(t => t.status === 'done').length
+  };
+}
+
+function streamFor(id) { return STREAMS.find(s => s.id === id); }
+
+function startOwnerEdit(el, streamId, idx) {
+  const st = streamFor(streamId);
+  const task = st.tasks[idx];
+  const input = document.createElement('input');
+  input.className = 'owner-input';
+  input.value = task.owner || '';
+  input.placeholder = 'Assignee…';
+  el.replaceWith(input);
+  input.focus();
+  input.select();
+  function commit() {
+    const val = input.value.trim();
+    task.owner = val;
+    renderAll();
+  }
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } if (e.key === 'Escape') renderAll(); });
+}
+
+function renderAll() {
+  const s = stats();
+  document.getElementById('chip-blocked').textContent = s.blocked + ' blocker' + (s.blocked !== 1 ? 's' : '');
+  document.getElementById('chip-inprogress').textContent = s.inprogress + ' in progress';
+  document.getElementById('chip-done').textContent = s.done + ' done';
+
+  // Blockers
+  const blockerItems = STREAMS.flatMap(st => st.tasks
+    .map((t, i) => ({ ...t, streamId: st.id, idx: i, stream: st.name }))
+    .filter(t => t.status === 'blocked'));
+  const bp = document.getElementById('blockers-panel');
+  const bl = document.getElementById('blockers-list');
+  bp.style.display = blockerItems.length ? 'block' : 'none';
+  bl.innerHTML = '';
+  blockerItems.forEach(b => {
+    const row = document.createElement('div');
+    row.className = 'blocker-row';
+    row.innerHTML = `
+      <div class="blocker-dot"></div>
+      <div class="blocker-desc" data-stream="${b.streamId}" data-idx="${b.idx}">${b.blocker || b.label}</div>
+      ${b.owner ? `<div class="blocker-owner">${b.owner}</div>` : ''}
+    `;
+    const desc = row.querySelector('.blocker-desc');
+    desc.addEventListener('click', () => {
+      const st = streamFor(desc.dataset.stream);
+      const idx = parseInt(desc.dataset.idx);
+      const task = st.tasks[idx];
+      const input = document.createElement('input');
+      input.className = 'blocker-input';
+      input.value = task.blocker || task.label;
+      desc.replaceWith(input);
+      input.focus();
+      input.select();
+      function commit() {
+        const val = input.value.trim();
+        if (val) task.blocker = val;
+        renderAll();
+      }
+      input.addEventListener('blur', commit);
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } if (e.key === 'Escape') renderAll(); });
+    });
+    bl.appendChild(row);
+  });
+
+  // Filter pills
+  const filtersEl = document.getElementById('filters');
+  filtersEl.innerHTML = `<button class="filter-pill ${activeFilter === 'all' ? 'active' : ''}" data-filter="all">All</button>` +
+    STREAMS.map(st => `<button class="filter-pill ${activeFilter === st.id ? 'active' : ''}" data-filter="${st.id}">${st.name}</button>`).join('');
+  filtersEl.querySelectorAll('.filter-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      activeFilter = pill.dataset.filter;
+      renderAll();
+    });
+  });
+
+  // Task list
+  const list = document.getElementById('task-list');
+  list.innerHTML = '';
+  STREAMS.forEach(stream => {
+    const visible = activeFilter === 'all' || activeFilter === stream.id;
+    const done = stream.tasks.filter(t => t.status === 'done').length;
+    const total = stream.tasks.length;
+    const p = total ? Math.round(done / total * 100) : 0;
+
+    // Section header
+    const header = document.createElement('div');
+    header.className = 'stream-header' + (visible ? '' : ' hidden');
+    header.innerHTML = `
+      <div class="stream-header-dot" style="background:${stream.color};"></div>
+      <div class="stream-header-name">${stream.name}</div>
+      <div class="stream-header-count">${done}/${total}</div>
+    `;
+    list.appendChild(header);
+
+    // Progress bar
+    const prog = document.createElement('div');
+    prog.className = 'stream-progress' + (visible ? '' : ' hidden');
+    prog.innerHTML = `<div class="stream-progress-fill" style="width:${p}%;background:${stream.color};"></div>`;
+    list.appendChild(prog);
+
+    stream.tasks.forEach((t, i) => {
+      const row = document.createElement('div');
+      row.className = 'task-row' + (visible ? '' : ' hidden');
+      row.dataset.stream = stream.id;
+      row.dataset.idx = i;
+
+      const check = document.createElement('div');
+      check.className = `check check-${t.status}`;
+
+      const label = document.createElement('div');
+      label.className = `task-label${t.status === 'done' ? ' task-label-done' : t.status === 'blocked' ? ' task-label-blocked' : ''}`;
+      label.textContent = t.label;
+
+      const desc = document.createElement('div');
+      desc.className = 'task-desc' + (t.desc ? '' : ' empty');
+      desc.textContent = t.desc || 'Add description…';
+      desc.title = 'Click to edit description';
+      desc.addEventListener('click', e => {
+        e.stopPropagation();
+        const input = document.createElement('input');
+        input.className = 'task-desc-input';
+        input.value = t.desc || '';
+        input.placeholder = 'Add description…';
+        desc.replaceWith(input);
+        input.focus();
+        function commit() {
+          const val = input.value.trim();
+          streamFor(stream.id).tasks[i].desc = val;
+          renderAll();
+        }
+        input.addEventListener('blur', commit);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } if (e.key === 'Escape') renderAll(); });
+      });
+
+      const meta = document.createElement('div');
+      meta.className = 'task-meta';
+
+      if (t.owner) {
+        const ownerEl = document.createElement('span');
+        ownerEl.className = 'task-owner';
+        ownerEl.textContent = t.owner;
+        ownerEl.title = 'Click to edit assignee';
+        ownerEl.addEventListener('click', e => {
+          e.stopPropagation();
+          startOwnerEdit(ownerEl, stream.id, i);
+        });
+        meta.appendChild(ownerEl);
+      } else {
+        const assignBtn = document.createElement('span');
+        assignBtn.className = 'assign-btn';
+        assignBtn.textContent = '+ assign';
+        assignBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          startOwnerEdit(assignBtn, stream.id, i);
+        });
+        meta.appendChild(assignBtn);
+      }
+
+      row.appendChild(check);
+      row.appendChild(label);
+      row.appendChild(desc);
+      row.appendChild(meta);
+
+      row.addEventListener('click', () => {
+        const st = streamFor(row.dataset.stream);
+        const idx = parseInt(row.dataset.idx);
+        st.tasks[idx].status = CYCLE[st.tasks[idx].status] || 'todo';
+        if (st.tasks[idx].status !== 'blocked') delete st.tasks[idx].blocker;
+        renderAll();
+      });
+      row.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        openCtxMenu(e.clientX, e.clientY, stream.id, i);
+      });
+      list.appendChild(row);
+    });
+  });
+
+  // Populate stream select in modal
+  const mStream = document.getElementById('m-stream');
+  const currentVal = mStream.value;
+  mStream.innerHTML = STREAMS.map(st => `<option value="${st.id}">${st.name}</option>`).join('');
+  if (currentVal) mStream.value = currentVal;
+}
+
+// Context menu
+let ctxTarget = null;
+const ctxMenu = document.getElementById('ctx-menu');
+
+function openCtxMenu(x, y, streamId, idx) {
+  ctxTarget = { streamId, idx };
+  const task = streamFor(streamId).tasks[idx];
+  ctxMenu.querySelectorAll('.ctx-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.status === task.status);
+  });
+  // Position, keep inside viewport
+  ctxMenu.style.display = 'block';
+  const menuW = ctxMenu.offsetWidth, menuH = ctxMenu.offsetHeight;
+  ctxMenu.style.display = '';
+  const left = Math.min(x, window.innerWidth - menuW - 8);
+  const top = Math.min(y, window.innerHeight - menuH - 8);
+  ctxMenu.style.left = left + 'px';
+  ctxMenu.style.top = top + 'px';
+  ctxMenu.classList.add('open');
+}
+
+function closeCtxMenu() { ctxMenu.classList.remove('open'); }
+
+ctxMenu.querySelectorAll('.ctx-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const newStatus = item.dataset.status;
+    closeCtxMenu();
+    if (newStatus === 'blocked') {
+      openBlockerPrompt(ctxTarget.streamId, ctxTarget.idx);
+    } else {
+      const st = streamFor(ctxTarget.streamId);
+      st.tasks[ctxTarget.idx].status = newStatus;
+      if (newStatus !== 'blocked') delete st.tasks[ctxTarget.idx].blocker;
+      renderAll();
+    }
+  });
+});
+
+document.addEventListener('click', e => {
+  if (!ctxMenu.contains(e.target)) closeCtxMenu();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCtxMenu(); closeBlockerPrompt(); } });
+
+// Blocker prompt
+const blockerPrompt = document.getElementById('blocker-prompt');
+const blockerInput = document.getElementById('blocker-prompt-input');
+let blockerTarget = null;
+
+function openBlockerPrompt(streamId, idx) {
+  blockerTarget = { streamId, idx };
+  const task = streamFor(streamId).tasks[idx];
+  blockerInput.value = task.blocker || '';
+  // Position near ctx menu last pos
+  const left = parseInt(ctxMenu.style.left) || 100;
+  const top = parseInt(ctxMenu.style.top) || 100;
+  blockerPrompt.style.left = Math.min(left, window.innerWidth - 316) + 'px';
+  blockerPrompt.style.top = Math.min(top, window.innerHeight - 140) + 'px';
+  blockerPrompt.classList.add('open');
+  blockerInput.focus();
+}
+
+function closeBlockerPrompt() { blockerPrompt.classList.remove('open'); }
+
+document.getElementById('blocker-prompt-cancel').addEventListener('click', closeBlockerPrompt);
+document.getElementById('blocker-prompt-save').addEventListener('click', () => {
+  if (!blockerTarget) return;
+  const st = streamFor(blockerTarget.streamId);
+  const task = st.tasks[blockerTarget.idx];
+  task.status = 'blocked';
+  task.blocker = blockerInput.value.trim() || task.label;
+  closeBlockerPrompt();
+  renderAll();
+});
+blockerInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('blocker-prompt-save').click(); }
+  if (e.key === 'Escape') closeBlockerPrompt();
+});
+
+// Modal
+document.getElementById('m-status').addEventListener('change', function() {
+  const show = this.value === 'blocked';
+  document.getElementById('m-blocker').style.display = show ? 'block' : 'none';
+  document.getElementById('m-blocker-label').style.display = show ? 'block' : 'none';
+});
+
+function openModal(presetStreamId) {
+  document.getElementById('m-name').value = '';
+  document.getElementById('m-desc').value = '';
+  document.getElementById('m-owner').value = '';
+  document.getElementById('m-status').value = 'todo';
+  document.getElementById('m-blocker').style.display = 'none';
+  document.getElementById('m-blocker-label').style.display = 'none';
+  if (presetStreamId) document.getElementById('m-stream').value = presetStreamId;
+  document.getElementById('modal-backdrop').classList.add('open');
+  document.getElementById('m-name').focus();
+}
+
+function closeModal() { document.getElementById('modal-backdrop').classList.remove('open'); }
+document.getElementById('modal-x').addEventListener('click', closeModal);
+document.getElementById('modal-cancel').addEventListener('click', closeModal);
+document.getElementById('modal-backdrop').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+document.getElementById('add-task-btn').addEventListener('click', () => {
+  openModal(activeFilter !== 'all' ? activeFilter : STREAMS[0].id);
+});
+
+document.getElementById('modal-save').addEventListener('click', () => {
+  const name = document.getElementById('m-name').value.trim();
+  if (!name) { document.getElementById('m-name').focus(); return; }
+  const stream = streamFor(document.getElementById('m-stream').value);
+  const task = {
+    label: name,
+    desc: document.getElementById('m-desc').value.trim(),
+    status: document.getElementById('m-status').value,
+    owner: document.getElementById('m-owner').value.trim()
+  };
+  const blocker = document.getElementById('m-blocker').value.trim();
+  if (task.status === 'blocked' && blocker) task.blocker = blocker;
+  stream.tasks.push(task);
+  closeModal();
+  renderAll();
+});
+
+renderAll();
+</script>
+</body>
+</html>
