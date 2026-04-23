@@ -114,6 +114,13 @@
   .task-desc.empty:hover { color: var(--text2); }
   .task-desc-input { font-size: 12px; flex: 1; min-width: 0; color: var(--text); background: transparent; border: none; border-bottom: 1.5px solid #3b82f6; outline: none; font-family: inherit; padding: 0; width: 100%; }
 
+  .task-due { font-size: 11px; width: 72px; min-width: 72px; flex-shrink: 0; color: var(--text3); cursor: text; white-space: nowrap; }
+  .task-due:hover { color: var(--text2); }
+  .task-due.empty { font-style: italic; }
+  .task-due.overdue { color: #dc2626; font-weight: 600; }
+  .task-due.soon { color: #d97706; font-weight: 600; }
+  .task-due-input { font-size: 11px; width: 72px; color: var(--text); background: transparent; border: none; border-bottom: 1.5px solid #3b82f6; outline: none; font-family: inherit; padding: 0; }
+
   .task-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-top: 1px; }
   .task-tag { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
   .task-owner { font-size: 10px; padding: 2px 7px; border-radius: 20px; background: var(--surface2); color: var(--text2); border: 1px solid var(--border); white-space: nowrap; font-weight: 500; cursor: text; }
@@ -273,16 +280,16 @@ const STREAMS = [
       { label: 'SDK docs visual system', status: 'inprogress', owner: 'Brian' },
       { label: 'Hackathon event page', status: 'done', owner: 'Brian' },
       { label: 'Developer portal UI kit', status: 'todo', owner: '' },
-      { label: 'UX design — developer platform', status: 'todo', owner: 'Nika', desc: 'Due 4/9' },
-      { label: 'Billing page design', status: 'todo', owner: 'Aubrey', desc: 'Due 4/6' },
+      { label: 'UX design — developer platform', status: 'todo', owner: 'Nika', due: '4/9' },
+      { label: 'Billing page design', status: 'todo', owner: 'Aubrey', due: '4/6' },
       { label: 'Align template app design with Nika, finalize before May 12', status: 'todo', owner: 'Nika' },
       { label: 'Design freeze: template app, console & docs', status: 'blocked', owner: 'Nika', blocker: 'Hard deadline Apr 8 before Nika PTO — all designs must be finalized' },
-      { label: 'Platform landing page — hero, capability overview, pricing, CTAs', status: 'todo', owner: 'Aubrey', desc: 'platform.plaud.ai · Due 4/20' },
-      { label: '"Start Building" CTA — routes to sign-up / waitlist', status: 'todo', owner: 'Aubrey', desc: 'Depends on access model at launch · Due 4/20' },
-      { label: '"Join Waitlist" flow — form live, responses collected in CRM', status: 'todo', owner: 'Aubrey', desc: 'Due 4/20' },
-      { label: 'Analytics — page view and CTA click tracking live before launch', status: 'todo', owner: 'Aubrey', desc: 'Due 4/20' },
-      { label: 'Demos — prepare 3+ live demos', status: 'todo', owner: 'Harry', desc: 'Due 5/5' },
-      { label: 'Blogs — developer platform launch posts', status: 'todo', owner: 'Aubrey', desc: 'Due 5/5' },
+      { label: 'Platform landing page — hero, capability overview, pricing, CTAs', status: 'todo', owner: 'Aubrey', desc: 'platform.plaud.ai', due: '4/20' },
+      { label: '"Start Building" CTA — routes to sign-up / waitlist', status: 'todo', owner: 'Aubrey', desc: 'Depends on access model at launch', due: '4/20' },
+      { label: '"Join Waitlist" flow — form live, responses collected in CRM', status: 'todo', owner: 'Aubrey', due: '4/20' },
+      { label: 'Analytics — page view and CTA click tracking live before launch', status: 'todo', owner: 'Aubrey', due: '4/20' },
+      { label: 'Demos — prepare 3+ live demos', status: 'todo', owner: 'Harry', due: '5/5' },
+      { label: 'Blogs — developer platform launch posts', status: 'todo', owner: 'Aubrey', due: '5/5' },
     ]
   },
   {
@@ -294,25 +301,25 @@ const STREAMS = [
       { label: 'OAuth browser flow', status: 'inprogress', owner: 'Nathan' },
       { label: 'SDK v1 package publish', status: 'inprogress', owner: 'Nathan' },
       { label: 'Claude Code integration test', status: 'todo', owner: '' },
-      { label: 'MCP code complete — server and CLI feature-complete', status: 'todo', owner: 'Lucas', desc: 'Due 4/15' },
-      { label: 'MCP deployment — production infrastructure live', status: 'todo', owner: 'Lucas', desc: 'Due 4/15' },
-      { label: 'MCP smoke test — login → data access → MCP tool call', status: 'todo', owner: 'Lucas', desc: 'Due 4/15' },
-      { label: 'MCP metrics — monitor usage and adoption', status: 'todo', owner: 'Lucas', desc: 'Due 4/15' },
+      { label: 'MCP code complete — server and CLI feature-complete', status: 'todo', owner: 'Lucas', due: '4/15' },
+      { label: 'MCP deployment — production infrastructure live', status: 'todo', owner: 'Lucas', due: '4/15' },
+      { label: 'MCP smoke test — login → data access → MCP tool call', status: 'todo', owner: 'Lucas', due: '4/15' },
+      { label: 'MCP metrics — monitor usage and adoption', status: 'todo', owner: 'Lucas', due: '4/15' },
       { label: 'Finalize pricing page [P0]', status: 'todo', owner: '' },
       { label: 'Waitlist page: rename to "Get early access" [P0]', status: 'todo', owner: '' },
       { label: 'Device SDK page: fix code snippets & SDK compat, replace "coming soon" with starter app module [P0]', status: 'todo', owner: '' },
       { label: 'Transcription page: remove webhooks, add evals from Steven [P0]', status: 'todo', owner: 'Steven' },
       { label: 'Cross-platform starter app (scan > pair > record > transcript)', status: 'todo', owner: 'Nika', blocker: 'Design alignment with Nika required; must finalize before May 12 launch' },
-      { label: 'Draft 6 skill files (search-recordings, synthesize-corpus, fetch-recording, extract-structured-data, generate-artifact, push-to-destination)', status: 'todo', owner: 'Aubrey', desc: 'Due 4/6' },
-      { label: 'Create skill.md manifest', status: 'todo', owner: 'Aubrey', desc: 'Top-level manifest with routing signals; commit to plaud-mcp repo · Due 4/6' },
-      { label: 'Routing tests for 20 sample queries', status: 'todo', owner: 'Aubrey', desc: 'Test in Claude Desktop; confirm each routes to correct skill · Due 4/6' },
+      { label: 'Draft 6 skill files (search-recordings, synthesize-corpus, fetch-recording, extract-structured-data, generate-artifact, push-to-destination)', status: 'todo', owner: 'Aubrey', due: '4/6' },
+      { label: 'Create skill.md manifest', status: 'todo', owner: 'Aubrey', desc: 'Top-level manifest with routing signals; commit to plaud-mcp repo', due: '4/6' },
+      { label: 'Routing tests for 20 sample queries', status: 'todo', owner: 'Aubrey', desc: 'Test in Claude Desktop; confirm each routes to correct skill', due: '4/6' },
       { label: 'Team workspace: address account-level vs workspace-level consent gap', status: 'blocked', owner: '', blocker: 'Admin approval workflow gap blocks OAuth/MCP/CLI for all Team users; must resolve before May 12' },
       { label: 'Resolve admin approval workflow for Team workspace release', status: 'todo', owner: '' },
-      { label: 'SDK code complete — SDK, developer console, landing page', status: 'todo', owner: 'Lucas', desc: 'Due 5/5' },
-      { label: 'Template app delivered to each customer', status: 'todo', owner: 'Lucas', desc: 'Each customer gets a working build configured for their account · Due 5/5' },
-      { label: 'SDK deployment — production infrastructure; 99.9% uptime target', status: 'todo', owner: 'Lucas', desc: 'Due 5/5' },
-      { label: 'SDK smoke test — app creation → credentials → API call → webhook', status: 'todo', owner: 'Lucas', desc: 'Due 5/5' },
-      { label: 'SDK metrics — monitor usage and adoption', status: 'todo', owner: 'Lucas', desc: 'Due 5/5' },
+      { label: 'SDK code complete — SDK, developer console, landing page', status: 'todo', owner: 'Lucas', due: '5/5' },
+      { label: 'Template app delivered to each customer', status: 'todo', owner: 'Lucas', desc: 'Each customer gets a working build configured for their account', due: '5/5' },
+      { label: 'SDK deployment — production infrastructure; 99.9% uptime target', status: 'todo', owner: 'Lucas', due: '5/5' },
+      { label: 'SDK smoke test — app creation → credentials → API call → webhook', status: 'todo', owner: 'Lucas', due: '5/5' },
+      { label: 'SDK metrics — monitor usage and adoption', status: 'todo', owner: 'Lucas', due: '5/5' },
       { label: 'Kick off penetration tests', status: 'todo', owner: 'Lucas' },
       { label: 'Kick off SOC 2 compliance audit', status: 'todo', owner: 'Lucas' },
       { label: 'Review pen test & SOC 2 results before public launch', status: 'todo', owner: 'Lucas' },
@@ -321,15 +328,15 @@ const STREAMS = [
   {
     id: 'docs', name: 'Documentation', color: '#16a34a', tagBg: '#dcfce7', tagText: '#14532d',
     tasks: [
-      { label: 'Quickstart guide — MCP installation, plaud login, first tool call', status: 'inprogress', owner: 'Aubrey', desc: 'Due 4/10' },
-      { label: 'CLI and MCP tool reference — all commands, tools, parameters, examples', status: 'todo', owner: 'Aubrey', desc: 'Due 4/10' },
-      { label: 'Workspace guide — private vs. team workspace for MCP/CLI', status: 'todo', owner: 'Aubrey', desc: 'Due 4/10' },
-      { label: 'README updated — plaud-mcp and plaud-cli GitHub READMEs', status: 'todo', owner: 'Aubrey', desc: 'Due 4/10' },
+      { label: 'Quickstart guide — MCP installation, plaud login, first tool call', status: 'inprogress', owner: 'Aubrey', due: '4/10' },
+      { label: 'CLI and MCP tool reference — all commands, tools, parameters, examples', status: 'todo', owner: 'Aubrey', due: '4/10' },
+      { label: 'Workspace guide — private vs. team workspace for MCP/CLI', status: 'todo', owner: 'Aubrey', due: '4/10' },
+      { label: 'README updated — plaud-mcp and plaud-cli GitHub READMEs', status: 'todo', owner: 'Aubrey', due: '4/10' },
       { label: 'Authentication guide', status: 'blocked', owner: 'Aubrey', blocker: 'Waiting on OAuth flow finalization from Eng' },
-      { label: 'Docs site live — docs.plaud.ai developer platform v1 structure', status: 'todo', owner: 'Aubrey', desc: 'Due 4/15' },
-      { label: 'All core guides complete — quickstart, SDK, OAuth API, Partner API, workspace', status: 'todo', owner: 'Aubrey', desc: 'Due 4/15' },
-      { label: 'Showcase gallery — 3+ first-party demos with code and architecture', status: 'todo', owner: 'Aubrey', desc: 'Optional · Due 4/15' },
-      { label: 'Changelog — v1.0.0 entry published', status: 'todo', owner: 'Aubrey', desc: 'Due 4/15' },
+      { label: 'Docs site live — docs.plaud.ai developer platform v1 structure', status: 'todo', owner: 'Aubrey', due: '4/15' },
+      { label: 'All core guides complete — quickstart, SDK, OAuth API, Partner API, workspace', status: 'todo', owner: 'Aubrey', due: '4/15' },
+      { label: 'Showcase gallery — 3+ first-party demos with code and architecture', status: 'todo', owner: 'Aubrey', desc: 'Optional', due: '4/15' },
+      { label: 'Changelog — v1.0.0 entry published', status: 'todo', owner: 'Aubrey', due: '4/15' },
     ]
   },
   {
@@ -337,24 +344,24 @@ const STREAMS = [
     tasks: [
       { label: 'Launch blog post draft', status: 'inprogress', owner: 'Aubrey' },
       { label: 'Hackathon S01 wrap-up comms', status: 'inprogress', owner: 'Aubrey' },
-      { label: 'Hackathon debrief and bug triage', status: 'todo', owner: 'Aubrey', desc: 'Apr 21 — bug triage from hack day; release blogs and marketing campaign' },
+      { label: 'Hackathon debrief and bug triage', status: 'todo', owner: 'Aubrey', desc: 'Bug triage from hack day; release blogs and marketing campaign', due: '4/21' },
       { label: 'Schedule internal hackathon (week of Apr 15)', status: 'todo', owner: 'Aubrey', desc: 'Framed as "eat our own dog food"' },
       { label: 'Send all-hands hackathon invites', status: 'todo', owner: 'Aubrey' },
       { label: 'Prepare hackathon brief — 1-pager: what MCP/CLI can do, setup, 5 use cases', status: 'todo', owner: 'Aubrey' },
       { label: 'Set up output collection for hackathon submissions', status: 'todo', owner: 'Harry', desc: 'Shared doc or Notion page for employees to post what they built / what broke' },
-      { label: 'Public launch (Apr 30): deploy in-app banner', status: 'todo', owner: 'Brian', desc: 'Banner in Plaud consumer app announcing MCP/CLI; links to docs' },
-      { label: 'Public launch: push notifications to power users', status: 'todo', owner: 'Brian', desc: 'Opt-in notification to Pro plan subscribers' },
-      { label: 'Public launch: targeted emails to Starter/Pro/Unlimited users', status: 'todo', owner: 'Brian', desc: 'With use case examples · Due 4/30' },
-      { label: 'Open feedback channel via Slack', status: 'todo', owner: 'Brian', desc: 'Due 4/30' },
-      { label: 'Dev community announcement', status: 'todo', owner: 'Brian', desc: 'Discord / Slack post; developer influencer outreach · Due 5/10' },
+      { label: 'Public launch: deploy in-app banner', status: 'todo', owner: 'Brian', desc: 'Banner in Plaud consumer app announcing MCP/CLI; links to docs', due: '4/30' },
+      { label: 'Public launch: push notifications to power users', status: 'todo', owner: 'Brian', desc: 'Opt-in notification to Pro plan subscribers', due: '4/30' },
+      { label: 'Public launch: targeted emails to Starter/Pro/Unlimited users', status: 'todo', owner: 'Brian', desc: 'With use case examples', due: '4/30' },
+      { label: 'Open feedback channel via Slack', status: 'todo', owner: 'Brian', due: '4/30' },
+      { label: 'Dev community announcement', status: 'todo', owner: 'Brian', desc: 'Discord / Slack post; developer influencer outreach', due: '5/10' },
       { label: 'Product Hunt launch brief', status: 'todo', owner: '' },
-      { label: 'SaaStr: confirm booth/demo slot and prepare demo script', status: 'todo', owner: 'Brian', desc: 'Due 5/10' },
-      { label: 'SaaStr: provision and configure demo devices', status: 'todo', owner: 'Brian', desc: 'Due 5/10' },
-      { label: 'SaaStr: sales deck — capabilities, pricing, beta customer logos', status: 'todo', owner: 'Brian', desc: 'Due 5/10' },
-      { label: 'Press / media — PR draft for May 12; media contacts identified', status: 'todo', owner: 'Brian', desc: 'Due 5/10' },
+      { label: 'SaaStr: confirm booth/demo slot and prepare demo script', status: 'todo', owner: 'Brian', due: '5/10' },
+      { label: 'SaaStr: provision and configure demo devices', status: 'todo', owner: 'Brian', due: '5/10' },
+      { label: 'SaaStr: sales deck — capabilities, pricing, beta customer logos', status: 'todo', owner: 'Brian', due: '5/10' },
+      { label: 'Press / media — PR draft for May 12; media contacts identified', status: 'todo', owner: 'Brian', due: '5/10' },
       { label: 'Schedule LinkedIn posts for May 12', status: 'todo', owner: 'Aubrey' },
       { label: 'Schedule Twitter/X posts for May 12', status: 'todo', owner: 'Aubrey' },
-      { label: 'Blog post — "Introducing the Plaud Developer Platform" (publish May 15)', status: 'todo', owner: 'Aubrey', desc: 'Draft, review, and schedule · Due 5/10' },
+      { label: 'Blog post — "Introducing the Plaud Developer Platform" (publish May 15)', status: 'todo', owner: 'Aubrey', desc: 'Draft, review, and schedule', due: '5/10' },
     ]
   },
   {
@@ -363,11 +370,11 @@ const STREAMS = [
       { label: 'Internal go/no-go review', status: 'todo', owner: 'Yijia' },
       { label: 'Legal / privacy sign-off', status: 'blocked', owner: 'Yijia', blocker: 'Legal review not yet scheduled — Yijia to push' },
       { label: 'Final release approval', status: 'todo', owner: 'Yijia' },
-      { label: 'Legal & compliance — avoid data leak', status: 'todo', owner: 'Lucas', desc: 'Track 1 · Due 4/15' },
-      { label: 'Legal & compliance — credential security', status: 'todo', owner: 'Lucas', desc: 'Track 1 · Due 4/15' },
-      { label: 'Developer terms of service', status: 'todo', owner: 'Lucas', desc: 'Covers SDK usage, data handling, prohibited uses · Due 5/5' },
-      { label: 'Privacy policy update', status: 'todo', owner: 'Lucas', desc: 'Reflects OAuth data access, SDK telemetry, billing data · Due 5/5' },
-      { label: 'SOC 2 / compliance audit timeline confirmed', status: 'todo', owner: 'Lucas', desc: 'Communicate status to enterprise beta customers · Due 5/5' },
+      { label: 'Legal & compliance — avoid data leak', status: 'todo', owner: 'Lucas', desc: 'Track 1', due: '4/15' },
+      { label: 'Legal & compliance — credential security', status: 'todo', owner: 'Lucas', desc: 'Track 1', due: '4/15' },
+      { label: 'Developer terms of service', status: 'todo', owner: 'Lucas', desc: 'Covers SDK usage, data handling, prohibited uses', due: '5/5' },
+      { label: 'Privacy policy update', status: 'todo', owner: 'Lucas', desc: 'Reflects OAuth data access, SDK telemetry, billing data', due: '5/5' },
+      { label: 'SOC 2 / compliance audit timeline confirmed', status: 'todo', owner: 'Lucas', desc: 'Communicate status to enterprise beta customers', due: '5/5' },
       { label: 'Support 5 business customers (e.g. Broadside Wealth) with OAuth beta accounts', status: 'todo', owner: '' },
       { label: 'Handle voice profile feature requests from OAuth beta customers', status: 'todo', owner: '' },
     ]
@@ -599,6 +606,40 @@ function renderAll() {
         input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } if (e.key === 'Escape') renderAll(); });
       });
 
+      // Due date column
+      const dueEl = document.createElement('div');
+      const today = new Date(); today.setHours(0,0,0,0);
+      function parseDue(str) {
+        if (!str) return null;
+        const [m, d] = str.split('/').map(Number);
+        const yr = new Date().getFullYear();
+        return new Date(yr, m - 1, d);
+      }
+      const dueDate = parseDue(t.due);
+      const daysLeft = dueDate ? Math.round((dueDate - today) / 86400000) : null;
+      let dueClass = 'task-due';
+      if (!t.due) dueClass += ' empty';
+      else if (daysLeft !== null && daysLeft < 0 && t.status !== 'done') dueClass += ' overdue';
+      else if (daysLeft !== null && daysLeft <= 3 && t.status !== 'done') dueClass += ' soon';
+      dueEl.className = dueClass;
+      dueEl.textContent = t.due || '—';
+      dueEl.title = 'Click to edit due date (M/D)';
+      dueEl.addEventListener('click', e => {
+        e.stopPropagation();
+        const input = document.createElement('input');
+        input.className = 'task-due-input';
+        input.value = t.due || '';
+        input.placeholder = 'M/D';
+        dueEl.replaceWith(input);
+        input.focus(); input.select();
+        function commit() {
+          streamFor(stream.id).tasks[i].due = input.value.trim();
+          renderAll();
+        }
+        input.addEventListener('blur', commit);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } if (e.key === 'Escape') renderAll(); });
+      });
+
       const meta = document.createElement('div');
       meta.className = 'task-meta';
 
@@ -627,6 +668,7 @@ function renderAll() {
       row.appendChild(check);
       row.appendChild(label);
       row.appendChild(desc);
+      row.appendChild(dueEl);
       row.appendChild(meta);
 
       row.addEventListener('click', () => {
