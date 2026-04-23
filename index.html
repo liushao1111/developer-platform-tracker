@@ -178,6 +178,9 @@
   .phase-done .phase-connector { background: #16a34a; }
   .phase-upcoming .phase-dot { border-color: var(--border2); }
 
+  /* Section label */
+  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 10px; margin-top: 0.5rem; }
+
   /* Legend */
   .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); }
@@ -224,6 +227,8 @@
     <div class="blockers-label">Open blockers</div>
     <div id="blockers-list"></div>
   </div>
+
+  <div class="section-label">Task Tracking</div>
 
   <div class="filters" id="filters"></div>
 
@@ -301,6 +306,17 @@
 
 <script>
 const STREAMS = [
+  {
+    id: 'pm', name: 'PM', color: '#0f766e', tagBg: '#ccfbf1', tagText: '#134e4a',
+    tasks: [
+      { label: 'Define launch scope and success metrics for May 12 beta', status: 'todo', owner: 'Aubrey', due: '4/27' },
+      { label: 'Finalize gated beta access model and waitlist flow', status: 'todo', owner: 'Aubrey', due: '4/27' },
+      { label: 'Write PRD for Developer Console v1', status: 'todo', owner: 'Aubrey', due: '4/30' },
+      { label: 'Review and sign off on landing page copy', status: 'todo', owner: 'Aubrey', due: '4/28' },
+      { label: 'Coordinate cross-team launch readiness check (Eng, Design, GTM, Legal)', status: 'todo', owner: 'Aubrey', due: '5/9' },
+      { label: 'Collect and triage beta customer feedback post-launch', status: 'todo', owner: 'Aubrey', due: '5/15' },
+    ]
+  },
   {
     id: 'design', name: 'Design', color: '#7c3aed', tagBg: '#ede9fe', tagText: '#4c1d95',
     tasks: [
@@ -383,7 +399,7 @@ const STREAMS = [
   },
 ];
 
-const STORAGE_KEY = 'plaud-tracker-v4';
+const STORAGE_KEY = 'plaud-tracker-v5';
 
 // Restore tasks from localStorage, preserving stream metadata (colors etc.)
 (function restoreFromStorage() {
