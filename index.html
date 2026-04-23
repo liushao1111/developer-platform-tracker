@@ -112,6 +112,9 @@
   .ctx-item:hover { background: var(--surface2); }
   .ctx-item .ctx-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
   .ctx-item.active { font-weight: 600; }
+  .ctx-divider { height: 1px; background: var(--border); margin: 4px 0; }
+  .ctx-delete { color: #dc2626; }
+  .ctx-delete:hover { background: var(--red-bg); }
 
   /* Blocker prompt */
   .blocker-prompt { position: fixed; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 210; padding: 14px 16px; width: 300px; display: none; }
@@ -186,6 +189,8 @@
   <div class="ctx-item" data-status="inprogress"><span class="ctx-dot" style="background:#2563eb;"></span>In progress</div>
   <div class="ctx-item" data-status="done"><span class="ctx-dot" style="background:#16a34a;"></span>Done</div>
   <div class="ctx-item" data-status="blocked"><span class="ctx-dot" style="background:#dc2626;"></span>Blocked…</div>
+  <div class="ctx-divider"></div>
+  <div class="ctx-item ctx-delete" id="ctx-delete">Delete task</div>
 </div>
 
 <!-- Blocker prompt -->
@@ -543,7 +548,7 @@ function openCtxMenu(x, y, streamId, idx) {
 
 function closeCtxMenu() { ctxMenu.classList.remove('open'); }
 
-ctxMenu.querySelectorAll('.ctx-item').forEach(item => {
+ctxMenu.querySelectorAll('.ctx-item[data-status]').forEach(item => {
   item.addEventListener('click', () => {
     const newStatus = item.dataset.status;
     closeCtxMenu();
@@ -556,6 +561,13 @@ ctxMenu.querySelectorAll('.ctx-item').forEach(item => {
       renderAll();
     }
   });
+});
+
+document.getElementById('ctx-delete').addEventListener('click', () => {
+  const st = streamFor(ctxTarget.streamId);
+  st.tasks.splice(ctxTarget.idx, 1);
+  closeCtxMenu();
+  renderAll();
 });
 
 document.addEventListener('click', e => {
