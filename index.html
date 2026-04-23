@@ -179,6 +179,32 @@
   .phase-done .phase-connector { background: #16a34a; }
   .phase-upcoming .phase-dot { border-color: var(--border2); }
 
+  /* Project progress */
+  .proj-progress { margin-bottom: 1.5rem; }
+  .proj-progress-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 10px; }
+  .proj-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+  .proj-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+  .proj-card-header { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+  .proj-card-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .proj-card-name { font-size: 12px; font-weight: 600; color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .proj-card-count { font-size: 11px; color: var(--text3); font-variant-numeric: tabular-nums; }
+  .proj-card-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .proj-card-fill { height: 4px; border-radius: 2px; transition: width 0.3s ease; }
+
+  /* Project tag in task rows */
+  .task-proj { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; cursor: pointer; border: 1px solid transparent; transition: opacity 0.1s; }
+  .task-proj:hover { opacity: 0.8; }
+  .task-proj-empty { background: var(--surface2); color: var(--text3); border-color: var(--border2); font-weight: 400; font-style: italic; }
+
+  /* Project dropdown */
+  .proj-dropdown { position: fixed; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-sm); box-shadow: 0 4px 16px rgba(0,0,0,0.13); z-index: 300; min-width: 160px; padding: 4px 0; display: none; }
+  .proj-dropdown.open { display: block; }
+  .proj-dd-item { display: flex; align-items: center; gap: 8px; padding: 7px 12px; font-size: 12px; cursor: pointer; color: var(--text); transition: background 0.1s; }
+  .proj-dd-item:hover { background: var(--surface2); }
+  .proj-dd-item.active { font-weight: 600; }
+  .proj-dd-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .proj-dd-none { color: var(--text3); font-style: italic; }
+
   /* Section label */
   .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 10px; margin-top: 0.5rem; }
 
@@ -224,6 +250,11 @@
     <div class="roadmap-track" id="roadmap-track"></div>
   </div>
 
+  <div class="proj-progress">
+    <div class="proj-progress-title">Project Progress</div>
+    <div class="proj-cards" id="proj-cards"></div>
+  </div>
+
   <div class="blockers-panel" id="blockers-panel" style="display:none;">
     <div class="blockers-label">Open blockers</div>
     <div id="blockers-list"></div>
@@ -255,6 +286,8 @@
 </div>
 
 <!-- Context menu -->
+<div class="proj-dropdown" id="proj-dropdown"></div>
+
 <div class="ctx-menu" id="ctx-menu">
   <div class="ctx-item" data-status="todo"><span class="ctx-dot" style="background:#d1d5db;border:1.5px solid #9ca3af;"></span>To do</div>
   <div class="ctx-item" data-status="inprogress"><span class="ctx-dot" style="background:#2563eb;"></span>In progress</div>
@@ -306,86 +339,94 @@
 </div>
 
 <script>
+const PROJECTS = [
+  { id: 'mcp',   name: 'MCP/CLI',               color: '#7c3aed' },
+  { id: 'beta',  name: 'Dev Platform Beta',      color: '#2563eb' },
+  { id: 'ga',    name: 'Dev Platform GA',        color: '#16a34a' },
+  { id: 'voice', name: 'Voice API',              color: '#d97706' },
+  { id: 'sigma', name: 'Sigma Device Launch',    color: '#db2777' },
+];
+
 const STREAMS = [
   {
     id: 'pm', name: 'Strategy / Product Decision', color: '#0f766e', tagBg: '#ccfbf1', tagText: '#134e4a',
     tasks: [
-      { label: 'Define launch scope and success metrics for May 12 beta', status: 'todo', owner: 'Aubrey', due: '4/27' },
-      { label: 'Finalize gated beta access model and waitlist flow', status: 'inprogress', owner: 'Aubrey', due: '4/27' },
-      { label: 'Write PRD for Developer Console v1', status: 'done', owner: 'Aubrey', due: '4/30' },
-      { label: 'Coordinate cross-team launch readiness check (Eng, Design, GTM, Legal)', status: 'inprogress', owner: 'Aubrey', due: '5/9' },
-      { label: 'Collect and triage beta customer feedback post-launch', status: 'todo', owner: 'Aubrey', due: '5/15' },
+      { label: 'Define launch scope and success metrics for May 12 beta', status: 'todo', owner: 'Aubrey', due: '4/27', project: 'beta' },
+      { label: 'Finalize gated beta access model and waitlist flow', status: 'inprogress', owner: 'Aubrey', due: '4/27', project: 'beta' },
+      { label: 'Write PRD for Developer Console v1', status: 'done', owner: 'Aubrey', due: '4/30', project: 'beta' },
+      { label: 'Coordinate cross-team launch readiness check (Eng, Design, GTM, Legal)', status: 'inprogress', owner: 'Aubrey', due: '5/9', project: 'beta' },
+      { label: 'Collect and triage beta customer feedback post-launch', status: 'todo', owner: 'Aubrey', due: '5/15', project: 'beta' },
     ]
   },
   {
     id: 'design', name: 'Design', color: '#7c3aed', tagBg: '#ede9fe', tagText: '#4c1d95',
     tasks: [
-      { label: 'UX design — developer platform', status: 'done', owner: 'Nika' },
-      { label: 'Align template app design with Nika, finalize before May 12', status: 'done', owner: 'Nika' },
-      { label: 'Platform landing page — hero, capability overview, pricing, CTAs', status: 'inprogress', owner: 'Harry/Nika' },
-      { label: 'Oauth switch button in Settings', status: 'inprogress', owner: 'Nika' },
-      { label: 'Workspace selection for MCP/CLI', status: 'todo', owner: 'Nika' },
-      { label: 'Landing Page - Homepage design final', status: 'inprogress', owner: 'Nika', desc: '1 person-day', due: '4/23' },
-      { label: 'Landing Page - Pricing & Contact Sales design', status: 'inprogress', owner: 'Nika', desc: '2 person-days', due: '4/27' },
-      { label: 'Landing Page - Device SDK page design', status: 'inprogress', owner: 'Nika', desc: '2 person-days', due: '4/29' },
-      { label: 'Landing Page - Transcription page design', status: 'inprogress', owner: 'Nika', desc: '2 person-days', due: '5/1' },
+      { label: 'UX design — developer platform', status: 'done', owner: 'Nika', project: 'beta' },
+      { label: 'Align template app design with Nika, finalize before May 12', status: 'done', owner: 'Nika', project: 'beta' },
+      { label: 'Platform landing page — hero, capability overview, pricing, CTAs', status: 'inprogress', owner: 'Harry/Nika', project: 'beta' },
+      { label: 'Oauth switch button in Settings', status: 'inprogress', owner: 'Nika', project: 'beta' },
+      { label: 'Workspace selection for MCP/CLI', status: 'todo', owner: 'Nika', project: 'mcp' },
+      { label: 'Landing Page - Homepage design final', status: 'inprogress', owner: 'Nika', desc: '1 person-day', due: '4/23', project: 'beta' },
+      { label: 'Landing Page - Pricing & Contact Sales design', status: 'inprogress', owner: 'Nika', desc: '2 person-days', due: '4/27', project: 'beta' },
+      { label: 'Landing Page - Device SDK page design', status: 'inprogress', owner: 'Nika', desc: '2 person-days', due: '4/29', project: 'beta' },
+      { label: 'Landing Page - Transcription page design', status: 'inprogress', owner: 'Nika', desc: '2 person-days', due: '5/1', project: 'beta' },
     ]
   },
   {
     id: 'eng', name: 'Engineering', color: '#2563eb', tagBg: '#dbeafe', tagText: '#1e3a8a',
     tasks: [
-      { label: 'MCP code complete — server and CLI feature-complete', status: 'inprogress', owner: 'Lucas' },
-      { label: 'MCP deployment — production infrastructure live', status: 'todo', owner: 'Lucas' },
-      { label: 'MCP smoke test — login → data access → MCP tool call', status: 'todo', owner: 'Lucas' },
-      { label: 'MCP metrics — monitor usage and adoption', status: 'todo', owner: 'Lucas' },
-      { label: 'Resolve admin approval workflow for Team workspace release', status: 'inprogress', owner: 'Lucas' },
-      { label: 'SDK code complete — SDK, developer console, landing page', status: 'inprogress', owner: 'Lucas', due: '5/5' },
-      { label: 'Template app delivered to each customer', status: 'inprogress', owner: 'Lucas', desc: 'Each customer gets a working build configured for their account', due: '5/5' },
-      { label: 'SDK deployment — production infrastructure; 99.9% uptime target', status: 'todo', owner: 'Lucas', due: '5/5' },
-      { label: 'SDK smoke test — app creation → credentials → API call → webhook', status: 'todo', owner: 'Lucas', due: '5/5' },
-      { label: 'SDK metrics — monitor usage and adoption', status: 'todo', owner: 'Lucas', due: '5/5' },
-      { label: 'Kick off penetration tests', status: 'todo', owner: 'Lucas' },
-      { label: 'Kick off SOC 2 compliance audit', status: 'todo', owner: 'Lucas' },
-      { label: 'Review pen test & SOC 2 results before public launch', status: 'todo', owner: 'Lucas' },
-      { label: 'Landing Page - Homepage dev', status: 'inprogress', owner: 'Ethan', desc: '1 person-day', due: '4/24' },
-      { label: 'Landing Page - Pricing page dev', status: 'inprogress', owner: 'Ethan', desc: '0.5 person-days', due: '4/28' },
-      { label: 'Landing Page - Device intro page dev', status: 'inprogress', owner: 'Ethan', desc: '1 person-day', due: '4/30' },
-      { label: 'Landing Page - SDK intro page dev', status: 'inprogress', owner: 'Ethan', desc: '0.5 person-days', due: '5/6' },
-      { label: 'Landing Page - Deployment (requires DevOps)', status: 'inprogress', owner: 'Ethan', desc: '1 person-day · Completed 5/7', due: '5/7' },
-      { label: 'Mobile SDK - Frontend dev', status: 'todo', owner: 'Pany', desc: '2 person-days', due: '4/27' },
-      { label: 'Mobile SDK - Backend dev (partner token / transcription / firmware upgrade)', status: 'todo', owner: 'Lucas', desc: '3 person-days', due: '4/28' },
-      { label: 'Mobile SDK - Frontend/backend integration', status: 'todo', owner: 'Lucas', desc: '3 person-days', due: '5/6' },
-      { label: 'Mobile SDK - Feature completion (new SDK features + UI)', status: 'todo', owner: 'Pany', desc: '3 person-days', due: '5/9' },
-      { label: 'Mobile SDK - Self-testing and bug fixes', status: 'todo', owner: 'Pany', desc: '2 person-days', due: '5/10' },
-      { label: 'Mobile SDK - Release', status: 'done', owner: 'Pany', desc: 'Example App completed 5/11', due: '5/11' },
-      { label: 'Desktop SDK', status: 'done', owner: 'Ethan', desc: '7 person-days · Completed 5/15', due: '5/15' },
+      { label: 'MCP code complete — server and CLI feature-complete', status: 'inprogress', owner: 'Lucas', project: 'mcp' },
+      { label: 'MCP deployment — production infrastructure live', status: 'todo', owner: 'Lucas', project: 'mcp' },
+      { label: 'MCP smoke test — login → data access → MCP tool call', status: 'todo', owner: 'Lucas', project: 'mcp' },
+      { label: 'MCP metrics — monitor usage and adoption', status: 'todo', owner: 'Lucas', project: 'mcp' },
+      { label: 'Resolve admin approval workflow for Team workspace release', status: 'inprogress', owner: 'Lucas', project: 'beta' },
+      { label: 'SDK code complete — SDK, developer console, landing page', status: 'inprogress', owner: 'Lucas', due: '5/5', project: 'beta' },
+      { label: 'Template app delivered to each customer', status: 'inprogress', owner: 'Lucas', desc: 'Each customer gets a working build configured for their account', due: '5/5', project: 'beta' },
+      { label: 'SDK deployment — production infrastructure; 99.9% uptime target', status: 'todo', owner: 'Lucas', due: '5/5', project: 'beta' },
+      { label: 'SDK smoke test — app creation → credentials → API call → webhook', status: 'todo', owner: 'Lucas', due: '5/5', project: 'beta' },
+      { label: 'SDK metrics — monitor usage and adoption', status: 'todo', owner: 'Lucas', due: '5/5', project: 'beta' },
+      { label: 'Kick off penetration tests', status: 'todo', owner: 'Lucas', project: 'beta' },
+      { label: 'Kick off SOC 2 compliance audit', status: 'todo', owner: 'Lucas', project: 'beta' },
+      { label: 'Review pen test & SOC 2 results before public launch', status: 'todo', owner: 'Lucas', project: 'ga' },
+      { label: 'Landing Page - Homepage dev', status: 'inprogress', owner: 'Ethan', desc: '1 person-day', due: '4/24', project: 'beta' },
+      { label: 'Landing Page - Pricing page dev', status: 'inprogress', owner: 'Ethan', desc: '0.5 person-days', due: '4/28', project: 'beta' },
+      { label: 'Landing Page - Device intro page dev', status: 'inprogress', owner: 'Ethan', desc: '1 person-day', due: '4/30', project: 'beta' },
+      { label: 'Landing Page - SDK intro page dev', status: 'inprogress', owner: 'Ethan', desc: '0.5 person-days', due: '5/6', project: 'beta' },
+      { label: 'Landing Page - Deployment (requires DevOps)', status: 'inprogress', owner: 'Ethan', desc: '1 person-day · Completed 5/7', due: '5/7', project: 'beta' },
+      { label: 'Mobile SDK - Frontend dev', status: 'todo', owner: 'Pany', desc: '2 person-days', due: '4/27', project: 'sigma' },
+      { label: 'Mobile SDK - Backend dev (partner token / transcription / firmware upgrade)', status: 'todo', owner: 'Lucas', desc: '3 person-days', due: '4/28', project: 'sigma' },
+      { label: 'Mobile SDK - Frontend/backend integration', status: 'todo', owner: 'Lucas', desc: '3 person-days', due: '5/6', project: 'sigma' },
+      { label: 'Mobile SDK - Feature completion (new SDK features + UI)', status: 'todo', owner: 'Pany', desc: '3 person-days', due: '5/9', project: 'sigma' },
+      { label: 'Mobile SDK - Self-testing and bug fixes', status: 'todo', owner: 'Pany', desc: '2 person-days', due: '5/10', project: 'sigma' },
+      { label: 'Mobile SDK - Release', status: 'done', owner: 'Pany', desc: 'Example App completed 5/11', due: '5/11', project: 'sigma' },
+      { label: 'Desktop SDK', status: 'done', owner: 'Ethan', desc: '7 person-days · Completed 5/15', due: '5/15', project: 'sigma' },
     ]
   },
   {
     id: 'docs', name: 'Documentation', color: '#16a34a', tagBg: '#dcfce7', tagText: '#14532d',
     tasks: [
-      { label: 'Quickstart guide — MCP installation, plaud login, first tool call', status: 'done', owner: 'Aubrey' },
-      { label: 'README updated — plaud-mcp and plaud-cli GitHub READMEs', status: 'done', owner: 'Wesley' },
-      { label: 'Docs site live — docs.plaud.ai developer platform v1 structure', status: 'inprogress', owner: 'Aubrey/Lucas' },
-      { label: 'Changelog — v1.0.0 entry published', status: 'inprogress', owner: 'Aubrey' },
-      { label: 'Add data transition information for MCP', status: 'todo', owner: 'Aubrey' },
+      { label: 'Quickstart guide — MCP installation, plaud login, first tool call', status: 'done', owner: 'Aubrey', project: 'mcp' },
+      { label: 'README updated — plaud-mcp and plaud-cli GitHub READMEs', status: 'done', owner: 'Wesley', project: 'mcp' },
+      { label: 'Docs site live — docs.plaud.ai developer platform v1 structure', status: 'inprogress', owner: 'Aubrey/Lucas', project: 'beta' },
+      { label: 'Changelog — v1.0.0 entry published', status: 'inprogress', owner: 'Aubrey', project: 'ga' },
+      { label: 'Add data transition information for MCP', status: 'todo', owner: 'Aubrey', project: 'mcp' },
     ]
   },
   {
     id: 'gtm', name: 'GTM', color: '#d97706', tagBg: '#fef3c7', tagText: '#78350f',
     tasks: [
-      { label: 'Launch blog post draft', status: 'todo', owner: 'Brian' },
-      { label: 'Hackathon S01 wrap-up comms', status: 'todo', owner: 'Brian' },
-      { label: 'Decide on the gated beta strategy', status: 'done', owner: 'Aubrey/Yijia' },
-      { label: 'Landing Page - Pricing & Contact Sales Content', status: 'todo', owner: 'Brian', due: '4/23' },
-      { label: 'Landing Page - Device SDK Content', status: 'todo', owner: 'Brian', due: '4/27' },
-      { label: 'Landing Page - Transcription Content', status: 'todo', owner: 'Brian', due: '4/29' },
-      { label: 'Meet with customers to info incoming release of developer platform', status: 'inprogress', owner: 'Brian/Aubrey' },
+      { label: 'Launch blog post draft', status: 'todo', owner: 'Brian', project: 'beta' },
+      { label: 'Hackathon S01 wrap-up comms', status: 'todo', owner: 'Brian', project: 'mcp' },
+      { label: 'Decide on the gated beta strategy', status: 'done', owner: 'Aubrey/Yijia', project: 'beta' },
+      { label: 'Landing Page - Pricing & Contact Sales Content', status: 'todo', owner: 'Brian', due: '4/23', project: 'beta' },
+      { label: 'Landing Page - Device SDK Content', status: 'todo', owner: 'Brian', due: '4/27', project: 'beta' },
+      { label: 'Landing Page - Transcription Content', status: 'todo', owner: 'Brian', due: '4/29', project: 'beta' },
+      { label: 'Meet with customers to info incoming release of developer platform', status: 'inprogress', owner: 'Brian/Aubrey', project: 'beta' },
     ]
   },
 ];
 
-const STORAGE_KEY = 'plaud-tracker-v8';
+const STORAGE_KEY = 'plaud-tracker-v9';
 
 // Restore tasks from localStorage, preserving stream metadata (colors etc.)
 (function restoreFromStorage() {
@@ -484,6 +525,28 @@ function renderAll() {
   document.getElementById('chip-blocked').textContent = s.blocked + ' blocker' + (s.blocked !== 1 ? 's' : '');
   document.getElementById('chip-inprogress').textContent = s.inprogress + ' in progress';
   document.getElementById('chip-done').textContent = s.done + ' done';
+
+  // Project progress cards
+  const allTasks = STREAMS.flatMap(st => st.tasks);
+  const projCards = document.getElementById('proj-cards');
+  projCards.innerHTML = '';
+  PROJECTS.forEach(p => {
+    const tasks = allTasks.filter(t => t.project === p.id);
+    const done = tasks.filter(t => t.status === 'done').length;
+    const total = tasks.length;
+    const pct = total ? Math.round(done / total * 100) : 0;
+    const card = document.createElement('div');
+    card.className = 'proj-card';
+    card.innerHTML = `
+      <div class="proj-card-header">
+        <div class="proj-card-dot" style="background:${p.color}"></div>
+        <div class="proj-card-name">${p.name}</div>
+        <div class="proj-card-count">${done}/${total}</div>
+      </div>
+      <div class="proj-card-bar"><div class="proj-card-fill" style="width:${pct}%;background:${p.color}"></div></div>
+    `;
+    projCards.appendChild(card);
+  });
 
   // Blockers
   const blockerItems = STREAMS.flatMap(st => st.tasks
@@ -710,10 +773,29 @@ function renderAll() {
       }
 
       row.appendChild(cb);
+      // Project tag
+      const proj = PROJECTS.find(p => p.id === t.project);
+      const projTag = document.createElement('span');
+      if (proj) {
+        projTag.className = 'task-proj';
+        projTag.textContent = proj.name;
+        projTag.style.background = proj.color + '18';
+        projTag.style.color = proj.color;
+        projTag.style.borderColor = proj.color + '40';
+      } else {
+        projTag.className = 'task-proj task-proj-empty';
+        projTag.textContent = 'no project';
+      }
+      projTag.addEventListener('click', e => {
+        e.stopPropagation();
+        openProjDropdown(e, stream.id, i);
+      });
+
       row.appendChild(check);
       row.appendChild(label);
       row.appendChild(desc);
       row.appendChild(dueEl);
+      row.appendChild(projTag);
       row.appendChild(meta);
 
       row.addEventListener('contextmenu', e => {
@@ -737,6 +819,56 @@ function renderAll() {
 // Context menu
 let ctxTarget = null;
 const ctxMenu = document.getElementById('ctx-menu');
+
+// Project dropdown
+const projDropdown = document.getElementById('proj-dropdown');
+let projTarget = null;
+
+function openProjDropdown(e, streamId, idx) {
+  projTarget = { streamId, idx };
+  const task = streamFor(streamId).tasks[idx];
+  projDropdown.innerHTML = '';
+  // None option
+  const noneItem = document.createElement('div');
+  noneItem.className = 'proj-dd-item proj-dd-none' + (!task.project ? ' active' : '');
+  noneItem.textContent = 'No project';
+  noneItem.addEventListener('click', () => {
+    delete streamFor(streamId).tasks[idx].project;
+    saveToStorage(); renderAll(); closeProjDropdown();
+  });
+  projDropdown.appendChild(noneItem);
+  // Project options
+  PROJECTS.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'proj-dd-item' + (task.project === p.id ? ' active' : '');
+    const dot = document.createElement('div');
+    dot.className = 'proj-dd-dot';
+    dot.style.background = p.color;
+    item.appendChild(dot);
+    item.appendChild(document.createTextNode(p.name));
+    item.addEventListener('click', () => {
+      streamFor(streamId).tasks[idx].project = p.id;
+      saveToStorage(); renderAll(); closeProjDropdown();
+    });
+    projDropdown.appendChild(item);
+  });
+  // Position
+  projDropdown.style.display = 'block';
+  const rect = e.target.getBoundingClientRect();
+  const ddW = projDropdown.offsetWidth, ddH = projDropdown.offsetHeight;
+  projDropdown.style.display = '';
+  const left = Math.min(rect.left, window.innerWidth - ddW - 8);
+  const top = Math.min(rect.bottom + 4, window.innerHeight - ddH - 8);
+  projDropdown.style.left = left + 'px';
+  projDropdown.style.top = top + 'px';
+  projDropdown.classList.add('open');
+}
+
+function closeProjDropdown() { projDropdown.classList.remove('open'); }
+
+document.addEventListener('click', e => {
+  if (!projDropdown.contains(e.target)) closeProjDropdown();
+});
 
 function openCtxMenu(x, y, streamId, idx) {
   ctxTarget = { streamId, idx };
