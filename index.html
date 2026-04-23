@@ -105,9 +105,10 @@
   .check-blocked::after { content: ''; width: 1.5px; height: 8px; background: #dc2626; border-radius: 1px; display: block; margin: 0 auto; }
   .check-todo { border-color: var(--border2); background: transparent; }
 
-  .task-label { font-size: 13px; width: 280px; min-width: 180px; line-height: 1.45; color: var(--text); flex-shrink: 0; }
+  .task-label { font-size: 13px; width: 280px; min-width: 180px; line-height: 1.45; color: var(--text); flex-shrink: 0; cursor: text; }
   .task-label-done { color: var(--text3); text-decoration: line-through; }
   .task-label-blocked { color: #991b1b; }
+  .task-label-input { font-size: 13px; width: 280px; min-width: 180px; line-height: 1.45; color: var(--text); flex-shrink: 0; border: 1px solid var(--border); border-radius: 4px; padding: 1px 4px; font-family: inherit; outline: none; box-sizing: border-box; }
   .task-desc { font-size: 12px; flex: 1; color: var(--text2); line-height: 1.45; cursor: text; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .task-desc:hover { color: var(--text); }
   .task-desc.empty { color: var(--text3); font-style: italic; }
@@ -602,6 +603,24 @@ function renderAll() {
       const label = document.createElement('div');
       label.className = `task-label${t.status === 'done' ? ' task-label-done' : t.status === 'blocked' ? ' task-label-blocked' : ''}`;
       label.textContent = t.label;
+      label.title = 'Click to edit task name';
+      label.addEventListener('click', e => {
+        e.stopPropagation();
+        const input = document.createElement('input');
+        input.className = 'task-label-input';
+        input.value = t.label;
+        label.replaceWith(input);
+        input.focus();
+        input.select();
+        function commit() {
+          const val = input.value.trim();
+          if (val) streamFor(stream.id).tasks[i].label = val;
+          saveToStorage();
+          renderAll();
+        }
+        input.addEventListener('blur', commit);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } if (e.key === 'Escape') renderAll(); });
+      });
 
       const desc = document.createElement('div');
       desc.className = 'task-desc' + (t.desc ? '' : ' empty');
