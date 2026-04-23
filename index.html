@@ -379,26 +379,12 @@ const STREAMS = [
       { label: 'Landing Page - Pricing & Contact Sales Content', status: 'todo', owner: 'Brian', due: '4/23' },
       { label: 'Landing Page - Device SDK Content', status: 'todo', owner: 'Brian', due: '4/27' },
       { label: 'Landing Page - Transcription Content', status: 'todo', owner: 'Brian', due: '4/29' },
-    ]
-  },
-  {
-    id: 'release', name: 'Release tasks', color: '#db2777', tagBg: '#fce7f3', tagText: '#831843',
-    tasks: [
-      { label: 'Internal go/no-go review', status: 'todo', owner: 'Yijia' },
-      { label: 'Legal & compliance — avoid data leak', status: 'todo', owner: 'Lucas', desc: 'Track 1' },
-      { label: 'Legal & compliance — credential security', status: 'todo', owner: 'Lucas', desc: 'Track 1' },
-      { label: 'Privacy policy update', status: 'todo', owner: 'Lucas', desc: 'Reflects OAuth data access, SDK telemetry, billing data', due: '5/5' },
-    ]
-  },
-  {
-    id: 'enablement', name: 'Customer enablement', color: '#0891b2', tagBg: '#cffafe', tagText: '#164e63',
-    tasks: [
       { label: 'Meet with customers to info incoming release of developer platform', status: 'inprogress', owner: 'Brian/Aubrey' },
     ]
   },
 ];
 
-const STORAGE_KEY = 'plaud-tracker-v6';
+const STORAGE_KEY = 'plaud-tracker-v7';
 
 // Restore tasks from localStorage, preserving stream metadata (colors etc.)
 (function restoreFromStorage() {
