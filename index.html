@@ -70,7 +70,31 @@
   .stream-progress-fill { height: 2px; transition: width 0.3s ease; }
   .task-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 16px; cursor: pointer; transition: background 0.1s; border-bottom: 1px solid var(--border); }
   .task-row:hover { background: var(--surface2); }
+  .task-row.selected { background: #eff6ff; }
   .task-row.hidden { display: none; }
+
+  /* Batch checkbox */
+  .row-cb { width: 14px; height: 14px; border-radius: 3px; border: 1.5px solid var(--border2); flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.1s; }
+  .row-cb:hover { border-color: #3b82f6; }
+  .row-cb.checked { background: #2563eb; border-color: #2563eb; }
+  .row-cb.checked::after { content: ''; width: 7px; height: 3.5px; border-left: 1.5px solid #fff; border-bottom: 1.5px solid #fff; transform: rotate(-45deg) translate(0.5px,-0.5px); display: block; }
+  .task-row:not(:hover) .row-cb:not(.checked) { opacity: 0; }
+
+  /* Section select-all checkbox */
+  .stream-cb { width: 13px; height: 13px; border-radius: 3px; border: 1.5px solid var(--text3); flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.1s; }
+  .stream-cb:hover { border-color: #3b82f6; }
+  .stream-cb.checked { background: #2563eb; border-color: #2563eb; }
+  .stream-cb.checked::after { content: ''; width: 7px; height: 3.5px; border-left: 1.5px solid #fff; border-bottom: 1.5px solid #fff; transform: rotate(-45deg) translate(0.5px,-0.5px); display: block; }
+  .stream-cb.indeterminate { background: #2563eb; border-color: #2563eb; }
+  .stream-cb.indeterminate::after { content: ''; width: 7px; height: 1.5px; background: #fff; border-radius: 1px; display: block; }
+
+  /* Selection action bar */
+  .selection-bar { display: none; align-items: center; gap: 10px; padding: 8px 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-sm); margin-bottom: 8px; }
+  .selection-bar.visible { display: flex; }
+  .selection-count { font-size: 12px; font-weight: 600; color: #1e40af; flex: 1; }
+  .btn-delete-sel { font-size: 12px; font-weight: 500; padding: 5px 13px; border-radius: var(--radius-sm); border: 1px solid #fca5a5; background: var(--red-bg); color: var(--red-text); cursor: pointer; font-family: inherit; }
+  .btn-delete-sel:hover { background: #fca5a5; }
+  .btn-clear-sel { font-size: 12px; color: var(--text2); background: none; border: none; cursor: pointer; font-family: inherit; padding: 0; }
 
   .check { width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; }
   .check-done { border-color: #16a34a; background: #16a34a; }
@@ -167,6 +191,12 @@
   </div>
 
   <div class="filters" id="filters"></div>
+
+  <div class="selection-bar" id="selection-bar">
+    <span class="selection-count" id="selection-count">0 selected</span>
+    <button class="btn-delete-sel" id="btn-delete-sel">Delete selected</button>
+    <button class="btn-clear-sel" id="btn-clear-sel">Clear</button>
+  </div>
 
   <div class="task-panel" id="task-panel">
     <div id="task-list"></div>
@@ -324,6 +354,39 @@ const STREAMS = [
 
 const CYCLE = { todo: 'inprogress', inprogress: 'done', done: 'todo', blocked: 'todo' };
 let activeFilter = 'all';
+let selected = new Set(); // keys: "streamId:idx"
+
+function selKey(streamId, idx) { return `${streamId}:${idx}`; }
+
+function updateSelectionBar() {
+  const bar = document.getElementById('selection-bar');
+  const count = document.getElementById('selection-count');
+  if (selected.size > 0) {
+    bar.classList.add('visible');
+    count.textContent = `${selected.size} task${selected.size !== 1 ? 's' : ''} selected`;
+  } else {
+    bar.classList.remove('visible');
+  }
+}
+
+document.getElementById('btn-delete-sel').addEventListener('click', () => {
+  // Group by stream, delete in reverse index order to avoid index shifting
+  const byStream = {};
+  selected.forEach(key => {
+    const [sid, idx] = key.split(':');
+    (byStream[sid] = byStream[sid] || []).push(parseInt(idx));
+  });
+  Object.entries(byStream).forEach(([sid, indices]) => {
+    indices.sort((a, b) => b - a).forEach(i => streamFor(sid).tasks.splice(i, 1));
+  });
+  selected.clear();
+  renderAll();
+});
+
+document.getElementById('btn-clear-sel').addEventListener('click', () => {
+  selected.clear();
+  renderAll();
+});
 
 // Flatten all tasks with stream reference
 function allTasks() {
@@ -424,14 +487,35 @@ function renderAll() {
     const total = stream.tasks.length;
     const p = total ? Math.round(done / total * 100) : 0;
 
-    // Section header
+    // Section header with select-all checkbox
     const header = document.createElement('div');
     header.className = 'stream-header' + (visible ? '' : ' hidden');
-    header.innerHTML = `
-      <div class="stream-header-dot" style="background:${stream.color};"></div>
-      <div class="stream-header-name">${stream.name}</div>
-      <div class="stream-header-count">${done}/${total}</div>
-    `;
+    const streamKeys = stream.tasks.map((_, i) => selKey(stream.id, i));
+    const numSelected = streamKeys.filter(k => selected.has(k)).length;
+    const allSelected = numSelected === stream.tasks.length && stream.tasks.length > 0;
+    const someSelected = numSelected > 0 && !allSelected;
+    const streamCb = document.createElement('div');
+    streamCb.className = 'stream-cb' + (allSelected ? ' checked' : someSelected ? ' indeterminate' : '');
+    streamCb.title = allSelected ? 'Deselect all' : 'Select all';
+    streamCb.addEventListener('click', e => {
+      e.stopPropagation();
+      if (allSelected || someSelected) { streamKeys.forEach(k => selected.delete(k)); }
+      else { streamKeys.forEach(k => selected.add(k)); }
+      renderAll();
+    });
+    const dot = document.createElement('div');
+    dot.className = 'stream-header-dot';
+    dot.style.background = stream.color;
+    const nameEl = document.createElement('div');
+    nameEl.className = 'stream-header-name';
+    nameEl.textContent = stream.name;
+    const countEl = document.createElement('div');
+    countEl.className = 'stream-header-count';
+    countEl.textContent = `${done}/${total}`;
+    header.appendChild(streamCb);
+    header.appendChild(dot);
+    header.appendChild(nameEl);
+    header.appendChild(countEl);
     list.appendChild(header);
 
     // Progress bar
@@ -445,6 +529,17 @@ function renderAll() {
       row.className = 'task-row' + (visible ? '' : ' hidden');
       row.dataset.stream = stream.id;
       row.dataset.idx = i;
+
+      const key = selKey(stream.id, i);
+      if (selected.has(key)) row.classList.add('selected');
+
+      const cb = document.createElement('div');
+      cb.className = 'row-cb' + (selected.has(key) ? ' checked' : '');
+      cb.addEventListener('click', e => {
+        e.stopPropagation();
+        if (selected.has(key)) selected.delete(key); else selected.add(key);
+        renderAll();
+      });
 
       const check = document.createElement('div');
       check.className = `check check-${t.status}`;
@@ -498,6 +593,7 @@ function renderAll() {
         meta.appendChild(assignBtn);
       }
 
+      row.appendChild(cb);
       row.appendChild(check);
       row.appendChild(label);
       row.appendChild(desc);
@@ -523,6 +619,8 @@ function renderAll() {
   const currentVal = mStream.value;
   mStream.innerHTML = STREAMS.map(st => `<option value="${st.id}">${st.name}</option>`).join('');
   if (currentVal) mStream.value = currentVal;
+
+  updateSelectionBar();
 }
 
 // Context menu
