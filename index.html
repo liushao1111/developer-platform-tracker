@@ -311,9 +311,9 @@ const STREAMS = [
     id: 'pm', name: 'Strategy / Product Decision', color: '#0f766e', tagBg: '#ccfbf1', tagText: '#134e4a',
     tasks: [
       { label: 'Define launch scope and success metrics for May 12 beta', status: 'todo', owner: 'Aubrey', due: '4/27' },
-      { label: 'Finalize gated beta access model and waitlist flow', status: 'todo', owner: 'Aubrey', due: '4/27' },
-      { label: 'Write PRD for Developer Console v1', status: 'todo', owner: 'Aubrey', due: '4/30' },
-      { label: 'Coordinate cross-team launch readiness check (Eng, Design, GTM, Legal)', status: 'todo', owner: 'Aubrey', due: '5/9' },
+      { label: 'Finalize gated beta access model and waitlist flow', status: 'inprogress', owner: 'Aubrey', due: '4/27' },
+      { label: 'Write PRD for Developer Console v1', status: 'done', owner: 'Aubrey', due: '4/30' },
+      { label: 'Coordinate cross-team launch readiness check (Eng, Design, GTM, Legal)', status: 'inprogress', owner: 'Aubrey', due: '5/9' },
       { label: 'Collect and triage beta customer feedback post-launch', status: 'todo', owner: 'Aubrey', due: '5/15' },
     ]
   },
@@ -325,33 +325,33 @@ const STREAMS = [
       { label: 'Platform landing page — hero, capability overview, pricing, CTAs', status: 'inprogress', owner: 'Harry/Nika' },
       { label: 'Oauth switch button in Settings', status: 'inprogress', owner: 'Nika' },
       { label: 'Workspace selection for MCP/CLI', status: 'todo', owner: 'Nika' },
-      { label: 'Landing Page - Homepage design final', status: 'todo', owner: 'Nika', desc: '1 person-day', due: '4/23' },
-      { label: 'Landing Page - Pricing & Contact Sales design', status: 'todo', owner: 'Nika', desc: '2 person-days', due: '4/27' },
-      { label: 'Landing Page - Device SDK page design', status: 'todo', owner: 'Nika', desc: '2 person-days', due: '4/29' },
-      { label: 'Landing Page - Transcription page design', status: 'todo', owner: 'Nika', desc: '2 person-days', due: '5/1' },
+      { label: 'Landing Page - Homepage design final', status: 'inprogress', owner: 'Nika', desc: '1 person-day', due: '4/23' },
+      { label: 'Landing Page - Pricing & Contact Sales design', status: 'inprogress', owner: 'Nika', desc: '2 person-days', due: '4/27' },
+      { label: 'Landing Page - Device SDK page design', status: 'inprogress', owner: 'Nika', desc: '2 person-days', due: '4/29' },
+      { label: 'Landing Page - Transcription page design', status: 'inprogress', owner: 'Nika', desc: '2 person-days', due: '5/1' },
     ]
   },
   {
     id: 'eng', name: 'Engineering', color: '#2563eb', tagBg: '#dbeafe', tagText: '#1e3a8a',
     tasks: [
-      { label: 'MCP code complete — server and CLI feature-complete', status: 'todo', owner: 'Lucas' },
+      { label: 'MCP code complete — server and CLI feature-complete', status: 'inprogress', owner: 'Lucas' },
       { label: 'MCP deployment — production infrastructure live', status: 'todo', owner: 'Lucas' },
       { label: 'MCP smoke test — login → data access → MCP tool call', status: 'todo', owner: 'Lucas' },
       { label: 'MCP metrics — monitor usage and adoption', status: 'todo', owner: 'Lucas' },
-      { label: 'Resolve admin approval workflow for Team workspace release', status: 'todo', owner: '' },
-      { label: 'SDK code complete — SDK, developer console, landing page', status: 'todo', owner: 'Lucas', due: '5/5' },
-      { label: 'Template app delivered to each customer', status: 'todo', owner: 'Lucas', desc: 'Each customer gets a working build configured for their account', due: '5/5' },
+      { label: 'Resolve admin approval workflow for Team workspace release', status: 'inprogress', owner: 'Lucas' },
+      { label: 'SDK code complete — SDK, developer console, landing page', status: 'inprogress', owner: 'Lucas', due: '5/5' },
+      { label: 'Template app delivered to each customer', status: 'inprogress', owner: 'Lucas', desc: 'Each customer gets a working build configured for their account', due: '5/5' },
       { label: 'SDK deployment — production infrastructure; 99.9% uptime target', status: 'todo', owner: 'Lucas', due: '5/5' },
       { label: 'SDK smoke test — app creation → credentials → API call → webhook', status: 'todo', owner: 'Lucas', due: '5/5' },
       { label: 'SDK metrics — monitor usage and adoption', status: 'todo', owner: 'Lucas', due: '5/5' },
       { label: 'Kick off penetration tests', status: 'todo', owner: 'Lucas' },
       { label: 'Kick off SOC 2 compliance audit', status: 'todo', owner: 'Lucas' },
       { label: 'Review pen test & SOC 2 results before public launch', status: 'todo', owner: 'Lucas' },
-      { label: 'Landing Page - Homepage dev', status: 'todo', owner: 'Ethan', desc: '1 person-day', due: '4/24' },
-      { label: 'Landing Page - Pricing page dev', status: 'todo', owner: 'Ethan', desc: '0.5 person-days', due: '4/28' },
-      { label: 'Landing Page - Device intro page dev', status: 'todo', owner: 'Ethan', desc: '1 person-day', due: '4/30' },
-      { label: 'Landing Page - SDK intro page dev', status: 'todo', owner: 'Ethan', desc: '0.5 person-days', due: '5/6' },
-      { label: 'Landing Page - Deployment (requires DevOps)', status: 'done', owner: 'Ethan', desc: '1 person-day · Completed 5/7', due: '5/7' },
+      { label: 'Landing Page - Homepage dev', status: 'inprogress', owner: 'Ethan', desc: '1 person-day', due: '4/24' },
+      { label: 'Landing Page - Pricing page dev', status: 'inprogress', owner: 'Ethan', desc: '0.5 person-days', due: '4/28' },
+      { label: 'Landing Page - Device intro page dev', status: 'inprogress', owner: 'Ethan', desc: '1 person-day', due: '4/30' },
+      { label: 'Landing Page - SDK intro page dev', status: 'inprogress', owner: 'Ethan', desc: '0.5 person-days', due: '5/6' },
+      { label: 'Landing Page - Deployment (requires DevOps)', status: 'inprogress', owner: 'Ethan', desc: '1 person-day · Completed 5/7', due: '5/7' },
       { label: 'Mobile SDK - Frontend dev', status: 'todo', owner: 'Pany', desc: '2 person-days', due: '4/27' },
       { label: 'Mobile SDK - Backend dev (partner token / transcription / firmware upgrade)', status: 'todo', owner: 'Lucas', desc: '3 person-days', due: '4/28' },
       { label: 'Mobile SDK - Frontend/backend integration', status: 'todo', owner: 'Lucas', desc: '3 person-days', due: '5/6' },
@@ -364,8 +364,8 @@ const STREAMS = [
   {
     id: 'docs', name: 'Documentation', color: '#16a34a', tagBg: '#dcfce7', tagText: '#14532d',
     tasks: [
-      { label: 'Quickstart guide — MCP installation, plaud login, first tool call', status: 'inprogress', owner: 'Aubrey' },
-      { label: 'README updated — plaud-mcp and plaud-cli GitHub READMEs', status: 'inprogress', owner: 'Wesley' },
+      { label: 'Quickstart guide — MCP installation, plaud login, first tool call', status: 'done', owner: 'Aubrey' },
+      { label: 'README updated — plaud-mcp and plaud-cli GitHub READMEs', status: 'done', owner: 'Wesley' },
       { label: 'Docs site live — docs.plaud.ai developer platform v1 structure', status: 'inprogress', owner: 'Aubrey/Lucas' },
       { label: 'Changelog — v1.0.0 entry published', status: 'inprogress', owner: 'Aubrey' },
       { label: 'Add data transition information for MCP', status: 'todo', owner: 'Aubrey' },
@@ -385,7 +385,7 @@ const STREAMS = [
   },
 ];
 
-const STORAGE_KEY = 'plaud-tracker-v7';
+const STORAGE_KEY = 'plaud-tracker-v8';
 
 // Restore tasks from localStorage, preserving stream metadata (colors etc.)
 (function restoreFromStorage() {
