@@ -603,15 +603,24 @@ function renderAll() {
       const label = document.createElement('div');
       label.className = `task-label${t.status === 'done' ? ' task-label-done' : t.status === 'blocked' ? ' task-label-blocked' : ''}`;
       label.textContent = t.label;
-      label.title = 'Click to edit task name';
-      label.addEventListener('click', e => {
+      label.title = 'Double-click to edit task name';
+      label.addEventListener('dblclick', e => {
         e.stopPropagation();
+        // Capture caret offset at the exact click point
+        let caretOffset = t.label.length;
+        if (document.caretRangeFromPoint) {
+          const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+          if (range) caretOffset = range.startOffset;
+        } else if (document.caretPositionFromPoint) {
+          const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+          if (pos) caretOffset = pos.offset;
+        }
         const input = document.createElement('input');
         input.className = 'task-label-input';
         input.value = t.label;
         label.replaceWith(input);
         input.focus();
-        input.select();
+        input.setSelectionRange(caretOffset, caretOffset);
         function commit() {
           const val = input.value.trim();
           if (val) streamFor(stream.id).tasks[i].label = val;
