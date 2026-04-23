@@ -389,6 +389,29 @@ const STREAMS = [
   },
 ];
 
+const STORAGE_KEY = 'plaud-tracker-v1';
+
+// Restore tasks from localStorage, preserving stream metadata (colors etc.)
+(function restoreFromStorage() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    data.forEach(savedStream => {
+      const stream = STREAMS.find(s => s.id === savedStream.id);
+      if (stream) stream.tasks = savedStream.tasks;
+    });
+  } catch(e) {}
+})();
+
+function saveToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(
+      STREAMS.map(s => ({ id: s.id, tasks: s.tasks }))
+    ));
+  } catch(e) {}
+}
+
 const CYCLE = { todo: 'inprogress', inprogress: 'done', done: 'todo', blocked: 'todo' };
 let activeFilter = 'all';
 let selected = new Set(); // keys: "streamId:idx"
@@ -693,6 +716,7 @@ function renderAll() {
   if (currentVal) mStream.value = currentVal;
 
   updateSelectionBar();
+  saveToStorage();
 }
 
 // Context menu
