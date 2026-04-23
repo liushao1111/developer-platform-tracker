@@ -281,6 +281,10 @@ const STREAMS = [
       { label: 'Platform landing page — hero, capability overview, pricing, CTAs', status: 'inprogress', owner: 'Harry/Nika' },
       { label: 'Oauth switch button in Settings', status: 'inprogress', owner: 'Nika' },
       { label: 'Workspace selection for MCP/CLI', status: 'todo', owner: 'Nika' },
+      { label: 'Landing Page - 首页设计定稿', status: 'todo', owner: 'Nika', desc: '1人日', due: '4/23' },
+      { label: 'Landing Page - Pricing & Contact Sales 设计', status: 'todo', owner: 'Nika', desc: '2人日', due: '4/27' },
+      { label: 'Landing Page - Device SDK 页面设计', status: 'todo', owner: 'Nika', desc: '2人日', due: '4/29' },
+      { label: 'Landing Page - Transcription 页面设计', status: 'todo', owner: 'Nika', desc: '2人日', due: '5/1' },
     ]
   },
   {
@@ -299,6 +303,18 @@ const STREAMS = [
       { label: 'Kick off penetration tests', status: 'todo', owner: 'Lucas' },
       { label: 'Kick off SOC 2 compliance audit', status: 'todo', owner: 'Lucas' },
       { label: 'Review pen test & SOC 2 results before public launch', status: 'todo', owner: 'Lucas' },
+      { label: 'Landing Page - 首页开发', status: 'todo', owner: 'Ethan', desc: '1人日', due: '4/24' },
+      { label: 'Landing Page - 定价页面开发', status: 'todo', owner: 'Ethan', desc: '0.5人日', due: '4/28' },
+      { label: 'Landing Page - 设备介绍页开发', status: 'todo', owner: 'Ethan', desc: '1人日', due: '4/30' },
+      { label: 'Landing Page - SDK介绍页开发', status: 'todo', owner: 'Ethan', desc: '0.5人日', due: '5/6' },
+      { label: 'Landing Page - 页面部署 (需运维配合)', status: 'done', owner: 'Ethan', desc: '1人日 · LP开发5.7完工', due: '5/7' },
+      { label: 'Mobile SDK - 前端开发', status: 'todo', owner: 'Pany', desc: '2人日', due: '4/27' },
+      { label: 'Mobile SDK - 后端开发 (partnertoken/转写/固件升级)', status: 'todo', owner: 'Lucas', desc: '3人日', due: '4/28' },
+      { label: 'Mobile SDK - 前后端连调', status: 'todo', owner: 'Lucas', desc: '3人日', due: '5/6' },
+      { label: 'Mobile SDK - 功能补全 (新SDK功能+UI)', status: 'todo', owner: 'Pany', desc: '3人日', due: '5/9' },
+      { label: 'Mobile SDK - 自测修Bug', status: 'todo', owner: 'Pany', desc: '2人日', due: '5/10' },
+      { label: 'Mobile SDK - 发布', status: 'done', owner: 'Pany', desc: 'Example App开发5.11完工', due: '5/11' },
+      { label: 'Desktop SDK', status: 'done', owner: 'Ethan', desc: '7人日 · Desktop SDK开发5.15完工', due: '5/15' },
     ]
   },
   {
@@ -317,6 +333,9 @@ const STREAMS = [
       { label: 'Launch blog post draft', status: 'todo', owner: 'Brian' },
       { label: 'Hackathon S01 wrap-up comms', status: 'todo', owner: 'Brian' },
       { label: 'Decide on the gated beta strategy', status: 'blocked', owner: 'Aubrey/Yijia', blocker: 'Decision needed on gated beta strategy before launch' },
+      { label: 'Landing Page - Pricing & Contact Sales Content', status: 'todo', owner: 'Brian', due: '4/23' },
+      { label: 'Landing Page - Device SDK Content', status: 'todo', owner: 'Brian', due: '4/27' },
+      { label: 'Landing Page - Transcription Content', status: 'todo', owner: 'Brian', due: '4/29' },
     ]
   },
   {
@@ -336,7 +355,7 @@ const STREAMS = [
   },
 ];
 
-const STORAGE_KEY = 'plaud-tracker-v2';
+const STORAGE_KEY = 'plaud-tracker-v3';
 
 // Restore tasks from localStorage, preserving stream metadata (colors etc.)
 (function restoreFromStorage() {
