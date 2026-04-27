@@ -669,7 +669,15 @@ function renderAll() {
   filtersEl.innerHTML = `<button class="filter-pill ${activeFilter === 'all' ? 'active' : ''}" data-filter="all">All</button>` +
     STREAMS.map(st => `<button class="filter-pill ${activeFilter === st.id ? 'active' : ''}" data-filter="${st.id}">${st.name}</button>`).join('');
   filtersEl.querySelectorAll('.filter-pill').forEach(pill => {
-    pill.addEventListener('click', () => { activeFilter = pill.dataset.filter; renderAll(); });
+    pill.addEventListener('click', () => {
+      activeFilter = pill.dataset.filter;
+      if (activeFilter === 'all') {
+        history.replaceState(null, '', window.location.pathname);
+      } else {
+        history.replaceState(null, '', '#section-' + activeFilter);
+      }
+      renderAll();
+    });
   });
 
   // Task list
@@ -1111,6 +1119,11 @@ function scrollToHash() {
 }
 
 (async function init() {
+  const hash = window.location.hash.slice(1);
+  if (hash.startsWith('section-')) {
+    const streamId = hash.replace('section-', '');
+    if (STREAMS.find(s => s.id === streamId)) activeFilter = streamId;
+  }
   const panel = document.getElementById('task-panel');
   panel.style.opacity = '0.4';
   const loaded = await loadFromDB();
