@@ -64,7 +64,10 @@
   .stream-header { display: flex; align-items: center; gap: 10px; padding: 10px 16px 8px; background: var(--surface2); border-bottom: 1px solid var(--border); }
   .stream-header.hidden { display: none; }
   .stream-header-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .stream-header-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text2); flex: 1; }
+  .stream-header-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text2); flex: 1; display: flex; align-items: center; gap: 6px; }
+  .stream-anchor { color: var(--text3); text-decoration: none; opacity: 0; transition: opacity 0.1s; font-size: 12px; font-weight: 400; }
+  .stream-header:hover .stream-anchor { opacity: 1; }
+  .stream-anchor:hover { color: var(--text2); }
   .stream-header-count { font-size: 11px; color: var(--text3); font-variant-numeric: tabular-nums; }
   .stream-progress { height: 2px; background: var(--border); margin: 0; }
   .stream-progress.hidden { display: none; }
@@ -468,6 +471,7 @@ async function dbDelete(taskId) {
 
 async function loadFromDB() {
   const { data, error } = await db.from('tasks').select('*').order('sort_order').order('created_at');
+  console.log('[DB] load result:', { data, error, count: data?.length });
   if (error) { console.error('Load error:', error); return false; }
   if (!data || data.length === 0) return false;
   STREAMS.forEach(s => s.tasks = []);
@@ -679,6 +683,7 @@ function renderAll() {
 
     const header = document.createElement('div');
     header.className = 'stream-header' + (visible ? '' : ' hidden');
+    header.id = 'section-' + stream.id;
     const streamKeys = stream.tasks.map((_, i) => selKey(stream.id, i));
     const numSelected = streamKeys.filter(k => selected.has(k)).length;
     const allSelected = numSelected === stream.tasks.length && stream.tasks.length > 0;
@@ -698,6 +703,17 @@ function renderAll() {
     const nameEl = document.createElement('div');
     nameEl.className = 'stream-header-name';
     nameEl.textContent = stream.name;
+    const anchor = document.createElement('a');
+    anchor.className = 'stream-anchor';
+    anchor.href = '#section-' + stream.id;
+    anchor.textContent = '#';
+    anchor.title = 'Copy link to this section';
+    anchor.addEventListener('click', e => {
+      e.preventDefault();
+      window.location.hash = 'section-' + stream.id;
+      navigator.clipboard?.writeText(window.location.href);
+    });
+    nameEl.appendChild(anchor);
     const countEl = document.createElement('div');
     countEl.className = 'stream-header-count';
     countEl.textContent = `${done}/${total}`;
@@ -1086,6 +1102,13 @@ const PHASE_COLORS = ['#2563eb','#7c3aed','#0891b2','#d97706','#db2777','#16a34a
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
+function scrollToHash() {
+  const hash = window.location.hash.slice(1);
+  if (!hash) return;
+  const el = document.getElementById(hash);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 (async function init() {
   const panel = document.getElementById('task-panel');
   panel.style.opacity = '0.4';
@@ -1093,6 +1116,7 @@ const PHASE_COLORS = ['#2563eb','#7c3aed','#0891b2','#d97706','#db2777','#16a34a
   if (!loaded) await seedDB();
   panel.style.opacity = '';
   renderAll();
+  scrollToHash();
 })();
 </script>
 </body>
