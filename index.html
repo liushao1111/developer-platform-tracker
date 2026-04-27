@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Plaud Developer Platform — Launch Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -59,7 +60,7 @@
   .filter-pill.active { background: var(--text); border-color: var(--text); color: #fff; }
 
   /* Task list */
-  .task-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .task-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: opacity 0.15s; }
   .stream-header { display: flex; align-items: center; gap: 10px; padding: 10px 16px 8px; background: var(--surface2); border-bottom: 1px solid var(--border); }
   .stream-header.hidden { display: none; }
   .stream-header-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -339,6 +340,13 @@
 </div>
 
 <script>
+// Supabase client
+const { createClient } = supabase;
+const db = createClient(
+  'https://bfkrwpqdgyotwpndwmid.supabase.co',
+  'sb_publishable_ScRO_cZr9iYdzE6HKAOskg_XaN6M5Os'
+);
+
 const PROJECTS = [
   { id: 'mcp',   name: 'MCP/CLI',               color: '#7c3aed' },
   { id: 'beta',  name: 'Dev Platform Beta',      color: '#2563eb' },
@@ -419,32 +427,102 @@ const STREAMS = [
   },
 ];
 
-const STORAGE_KEY = 'plaud-tracker-v10';
+// ── DB helpers ────────────────────────────────────────────────────────────────
 
-// Restore tasks from localStorage, preserving stream metadata (colors etc.)
-(function restoreFromStorage() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) return;
-    const data = JSON.parse(saved);
-    data.forEach(savedStream => {
-      const stream = STREAMS.find(s => s.id === savedStream.id);
-      if (stream) stream.tasks = savedStream.tasks;
-    });
-  } catch(e) {}
-})();
+function genId() { return crypto.randomUUID(); }
 
-function saveToStorage() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(
-      STREAMS.map(s => ({ id: s.id, tasks: s.tasks }))
-    ));
-  } catch(e) {}
+async function dbInsert(task, streamId, sortOrder) {
+  const { error } = await db.from('tasks').insert({
+    id: task.id,
+    stream_id: streamId,
+    label: task.label,
+    status: task.status,
+    owner: task.owner || null,
+    due: task.due || null,
+    project: task.project || null,
+    description: task.desc || null,
+    blocker: task.blocker || null,
+    sort_order: sortOrder,
+  });
+  if (error) console.error('Insert error:', error);
 }
+
+async function dbUpdate(task) {
+  if (!task.id) return;
+  const { error } = await db.from('tasks').update({
+    label: task.label,
+    status: task.status,
+    owner: task.owner || null,
+    due: task.due || null,
+    project: task.project || null,
+    description: task.desc || null,
+    blocker: task.blocker || null,
+  }).eq('id', task.id);
+  if (error) console.error('Update error:', error);
+}
+
+async function dbDelete(taskId) {
+  const { error } = await db.from('tasks').delete().eq('id', taskId);
+  if (error) console.error('Delete error:', error);
+}
+
+async function loadFromDB() {
+  const { data, error } = await db.from('tasks').select('*').order('sort_order').order('created_at');
+  if (error) { console.error('Load error:', error); return false; }
+  if (!data || data.length === 0) return false;
+  STREAMS.forEach(s => s.tasks = []);
+  data.forEach(row => {
+    const stream = STREAMS.find(s => s.id === row.stream_id);
+    if (stream) stream.tasks.push({
+      id: row.id,
+      label: row.label,
+      status: row.status,
+      owner: row.owner,
+      due: row.due,
+      project: row.project,
+      desc: row.description,
+      blocker: row.blocker,
+    });
+  });
+  return true;
+}
+
+async function seedDB() {
+  const rows = [];
+  let order = 0;
+  STREAMS.forEach(stream => {
+    stream.tasks.forEach(task => {
+      task.id = genId();
+      rows.push({
+        id: task.id, stream_id: stream.id, label: task.label,
+        status: task.status, owner: task.owner || null, due: task.due || null,
+        project: task.project || null, description: task.desc || null,
+        blocker: task.blocker || null, sort_order: order++,
+      });
+    });
+  });
+  const { error } = await db.from('tasks').insert(rows);
+  if (error) console.error('Seed error:', error);
+}
+
+// Real-time: reload when a remote change arrives (debounced, skip if user is typing)
+let reloadTimer = null;
+db.channel('tasks-rt')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+    clearTimeout(reloadTimer);
+    reloadTimer = setTimeout(async () => {
+      if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+      await loadFromDB();
+      renderAll();
+    }, 600);
+  })
+  .subscribe();
+
+// ── App state ─────────────────────────────────────────────────────────────────
 
 const CYCLE = { todo: 'inprogress', inprogress: 'done', done: 'todo', blocked: 'todo' };
 let activeFilter = 'all';
-let selected = new Set(); // keys: "streamId:idx"
+let selected = new Set();
 
 function selKey(streamId, idx) { return `${streamId}:${idx}`; }
 
@@ -460,15 +538,19 @@ function updateSelectionBar() {
 }
 
 document.getElementById('btn-delete-sel').addEventListener('click', () => {
-  // Group by stream, delete in reverse index order to avoid index shifting
   const byStream = {};
   selected.forEach(key => {
     const [sid, idx] = key.split(':');
     (byStream[sid] = byStream[sid] || []).push(parseInt(idx));
   });
+  const idsToDelete = [];
   Object.entries(byStream).forEach(([sid, indices]) => {
-    indices.sort((a, b) => b - a).forEach(i => streamFor(sid).tasks.splice(i, 1));
+    indices.sort((a, b) => b - a).forEach(i => {
+      idsToDelete.push(streamFor(sid).tasks[i].id);
+      streamFor(sid).tasks.splice(i, 1);
+    });
   });
+  idsToDelete.forEach(id => dbDelete(id));
   selected.clear();
   renderAll();
 });
@@ -478,7 +560,6 @@ document.getElementById('btn-clear-sel').addEventListener('click', () => {
   renderAll();
 });
 
-// Flatten all tasks with stream reference
 function allTasks() {
   return STREAMS.flatMap(s => s.tasks.map((t, i) => ({ ...t, streamId: s.id, idx: i })));
 }
@@ -505,8 +586,8 @@ function startOwnerEdit(el, streamId, idx) {
   input.focus();
   input.select();
   function commit() {
-    const val = input.value.trim();
-    task.owner = val;
+    task.owner = input.value.trim();
+    dbUpdate(task);
     renderAll();
   }
   input.addEventListener('blur', commit);
@@ -520,11 +601,11 @@ function renderAll() {
   document.getElementById('chip-done').textContent = s.done + ' done';
 
   // Project progress cards
-  const allTasks = STREAMS.flatMap(st => st.tasks);
+  const allT = STREAMS.flatMap(st => st.tasks);
   const projCards = document.getElementById('proj-cards');
   projCards.innerHTML = '';
   PROJECTS.forEach(p => {
-    const tasks = allTasks.filter(t => t.project === p.id);
+    const tasks = allT.filter(t => t.project === p.id);
     const done = tasks.filter(t => t.status === 'done').length;
     const total = tasks.length;
     const pct = total ? Math.round(done / total * 100) : 0;
@@ -570,7 +651,7 @@ function renderAll() {
       input.select();
       function commit() {
         const val = input.value.trim();
-        if (val) task.blocker = val;
+        if (val) { task.blocker = val; dbUpdate(task); }
         renderAll();
       }
       input.addEventListener('blur', commit);
@@ -584,10 +665,7 @@ function renderAll() {
   filtersEl.innerHTML = `<button class="filter-pill ${activeFilter === 'all' ? 'active' : ''}" data-filter="all">All</button>` +
     STREAMS.map(st => `<button class="filter-pill ${activeFilter === st.id ? 'active' : ''}" data-filter="${st.id}">${st.name}</button>`).join('');
   filtersEl.querySelectorAll('.filter-pill').forEach(pill => {
-    pill.addEventListener('click', () => {
-      activeFilter = pill.dataset.filter;
-      renderAll();
-    });
+    pill.addEventListener('click', () => { activeFilter = pill.dataset.filter; renderAll(); });
   });
 
   // Task list
@@ -599,7 +677,6 @@ function renderAll() {
     const total = stream.tasks.length;
     const p = total ? Math.round(done / total * 100) : 0;
 
-    // Section header with select-all checkbox
     const header = document.createElement('div');
     header.className = 'stream-header' + (visible ? '' : ' hidden');
     const streamKeys = stream.tasks.map((_, i) => selKey(stream.id, i));
@@ -630,7 +707,6 @@ function renderAll() {
     header.appendChild(countEl);
     list.appendChild(header);
 
-    // Progress bar
     const prog = document.createElement('div');
     prog.className = 'stream-progress' + (visible ? '' : ' hidden');
     prog.innerHTML = `<div class="stream-progress-fill" style="width:${p}%;background:${stream.color};"></div>`;
@@ -658,10 +734,10 @@ function renderAll() {
       check.style.cursor = 'pointer';
       check.addEventListener('click', e => {
         e.stopPropagation();
-        const st = streamFor(stream.id);
-        st.tasks[i].status = CYCLE[st.tasks[i].status] || 'todo';
-        if (st.tasks[i].status !== 'blocked') delete st.tasks[i].blocker;
-        saveToStorage();
+        const task = streamFor(stream.id).tasks[i];
+        task.status = CYCLE[task.status] || 'todo';
+        if (task.status !== 'blocked') delete task.blocker;
+        dbUpdate(task);
         renderAll();
       });
 
@@ -678,8 +754,8 @@ function renderAll() {
         input.focus();
         function commit() {
           const val = input.value.trim();
-          if (val) streamFor(stream.id).tasks[i].label = val;
-          saveToStorage();
+          const task = streamFor(stream.id).tasks[i];
+          if (val) { task.label = val; dbUpdate(task); }
           renderAll();
         }
         input.addEventListener('blur', commit);
@@ -699,22 +775,21 @@ function renderAll() {
         desc.replaceWith(input);
         input.focus();
         function commit() {
-          const val = input.value.trim();
-          streamFor(stream.id).tasks[i].desc = val;
+          const task = streamFor(stream.id).tasks[i];
+          task.desc = input.value.trim();
+          dbUpdate(task);
           renderAll();
         }
         input.addEventListener('blur', commit);
         input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } if (e.key === 'Escape') renderAll(); });
       });
 
-      // Due date column
       const dueEl = document.createElement('div');
       const today = new Date(); today.setHours(0,0,0,0);
       function parseDue(str) {
         if (!str) return null;
         const [m, d] = str.split('/').map(Number);
-        const yr = new Date().getFullYear();
-        return new Date(yr, m - 1, d);
+        return new Date(new Date().getFullYear(), m - 1, d);
       }
       const dueDate = parseDue(t.due);
       const daysLeft = dueDate ? Math.round((dueDate - today) / 86400000) : null;
@@ -734,7 +809,9 @@ function renderAll() {
         dueEl.replaceWith(input);
         input.focus(); input.select();
         function commit() {
-          streamFor(stream.id).tasks[i].due = input.value.trim();
+          const task = streamFor(stream.id).tasks[i];
+          task.due = input.value.trim();
+          dbUpdate(task);
           renderAll();
         }
         input.addEventListener('blur', commit);
@@ -749,24 +826,17 @@ function renderAll() {
         ownerEl.className = 'task-owner';
         ownerEl.textContent = t.owner;
         ownerEl.title = 'Click to edit assignee';
-        ownerEl.addEventListener('click', e => {
-          e.stopPropagation();
-          startOwnerEdit(ownerEl, stream.id, i);
-        });
+        ownerEl.addEventListener('click', e => { e.stopPropagation(); startOwnerEdit(ownerEl, stream.id, i); });
         meta.appendChild(ownerEl);
       } else {
         const assignBtn = document.createElement('span');
         assignBtn.className = 'assign-btn';
         assignBtn.textContent = '+ assign';
-        assignBtn.addEventListener('click', e => {
-          e.stopPropagation();
-          startOwnerEdit(assignBtn, stream.id, i);
-        });
+        assignBtn.addEventListener('click', e => { e.stopPropagation(); startOwnerEdit(assignBtn, stream.id, i); });
         meta.appendChild(assignBtn);
       }
 
       row.appendChild(cb);
-      // Project tag
       const proj = PROJECTS.find(p => p.id === t.project);
       const projTag = document.createElement('span');
       if (proj) {
@@ -779,10 +849,7 @@ function renderAll() {
         projTag.className = 'task-proj task-proj-empty';
         projTag.textContent = 'no project';
       }
-      projTag.addEventListener('click', e => {
-        e.stopPropagation();
-        openProjDropdown(e, stream.id, i);
-      });
+      projTag.addEventListener('click', e => { e.stopPropagation(); openProjDropdown(e, stream.id, i); });
 
       row.appendChild(check);
       row.appendChild(label);
@@ -791,77 +858,23 @@ function renderAll() {
       row.appendChild(projTag);
       row.appendChild(meta);
 
-      row.addEventListener('contextmenu', e => {
-        e.preventDefault();
-        openCtxMenu(e.clientX, e.clientY, stream.id, i);
-      });
+      row.addEventListener('contextmenu', e => { e.preventDefault(); openCtxMenu(e.clientX, e.clientY, stream.id, i); });
       list.appendChild(row);
     });
   });
 
-  // Populate stream select in modal
   const mStream = document.getElementById('m-stream');
   const currentVal = mStream.value;
   mStream.innerHTML = STREAMS.map(st => `<option value="${st.id}">${st.name}</option>`).join('');
   if (currentVal) mStream.value = currentVal;
 
   updateSelectionBar();
-  saveToStorage();
 }
 
-// Context menu
+// ── Context menu ──────────────────────────────────────────────────────────────
+
 let ctxTarget = null;
 const ctxMenu = document.getElementById('ctx-menu');
-
-// Project dropdown
-const projDropdown = document.getElementById('proj-dropdown');
-let projTarget = null;
-
-function openProjDropdown(e, streamId, idx) {
-  projTarget = { streamId, idx };
-  const task = streamFor(streamId).tasks[idx];
-  projDropdown.innerHTML = '';
-  // None option
-  const noneItem = document.createElement('div');
-  noneItem.className = 'proj-dd-item proj-dd-none' + (!task.project ? ' active' : '');
-  noneItem.textContent = 'No project';
-  noneItem.addEventListener('click', () => {
-    delete streamFor(streamId).tasks[idx].project;
-    saveToStorage(); renderAll(); closeProjDropdown();
-  });
-  projDropdown.appendChild(noneItem);
-  // Project options
-  PROJECTS.forEach(p => {
-    const item = document.createElement('div');
-    item.className = 'proj-dd-item' + (task.project === p.id ? ' active' : '');
-    const dot = document.createElement('div');
-    dot.className = 'proj-dd-dot';
-    dot.style.background = p.color;
-    item.appendChild(dot);
-    item.appendChild(document.createTextNode(p.name));
-    item.addEventListener('click', () => {
-      streamFor(streamId).tasks[idx].project = p.id;
-      saveToStorage(); renderAll(); closeProjDropdown();
-    });
-    projDropdown.appendChild(item);
-  });
-  // Position
-  projDropdown.style.display = 'block';
-  const rect = e.target.getBoundingClientRect();
-  const ddW = projDropdown.offsetWidth, ddH = projDropdown.offsetHeight;
-  projDropdown.style.display = '';
-  const left = Math.min(rect.left, window.innerWidth - ddW - 8);
-  const top = Math.min(rect.bottom + 4, window.innerHeight - ddH - 8);
-  projDropdown.style.left = left + 'px';
-  projDropdown.style.top = top + 'px';
-  projDropdown.classList.add('open');
-}
-
-function closeProjDropdown() { projDropdown.classList.remove('open'); }
-
-document.addEventListener('click', e => {
-  if (!projDropdown.contains(e.target)) closeProjDropdown();
-});
 
 function openCtxMenu(x, y, streamId, idx) {
   ctxTarget = { streamId, idx };
@@ -869,14 +882,11 @@ function openCtxMenu(x, y, streamId, idx) {
   ctxMenu.querySelectorAll('.ctx-item').forEach(item => {
     item.classList.toggle('active', item.dataset.status === task.status);
   });
-  // Position, keep inside viewport
   ctxMenu.style.display = 'block';
   const menuW = ctxMenu.offsetWidth, menuH = ctxMenu.offsetHeight;
   ctxMenu.style.display = '';
-  const left = Math.min(x, window.innerWidth - menuW - 8);
-  const top = Math.min(y, window.innerHeight - menuH - 8);
-  ctxMenu.style.left = left + 'px';
-  ctxMenu.style.top = top + 'px';
+  ctxMenu.style.left = Math.min(x, window.innerWidth - menuW - 8) + 'px';
+  ctxMenu.style.top = Math.min(y, window.innerHeight - menuH - 8) + 'px';
   ctxMenu.classList.add('open');
 }
 
@@ -889,9 +899,10 @@ ctxMenu.querySelectorAll('.ctx-item[data-status]').forEach(item => {
     if (newStatus === 'blocked') {
       openBlockerPrompt(ctxTarget.streamId, ctxTarget.idx);
     } else {
-      const st = streamFor(ctxTarget.streamId);
-      st.tasks[ctxTarget.idx].status = newStatus;
-      if (newStatus !== 'blocked') delete st.tasks[ctxTarget.idx].blocker;
+      const task = streamFor(ctxTarget.streamId).tasks[ctxTarget.idx];
+      task.status = newStatus;
+      delete task.blocker;
+      dbUpdate(task);
       renderAll();
     }
   });
@@ -899,26 +910,72 @@ ctxMenu.querySelectorAll('.ctx-item[data-status]').forEach(item => {
 
 document.getElementById('ctx-delete').addEventListener('click', () => {
   const st = streamFor(ctxTarget.streamId);
+  const taskId = st.tasks[ctxTarget.idx].id;
   st.tasks.splice(ctxTarget.idx, 1);
+  dbDelete(taskId);
   closeCtxMenu();
   renderAll();
 });
 
-document.addEventListener('click', e => {
-  if (!ctxMenu.contains(e.target)) closeCtxMenu();
-});
+document.addEventListener('click', e => { if (!ctxMenu.contains(e.target)) closeCtxMenu(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCtxMenu(); closeBlockerPrompt(); } });
 
-// Blocker prompt
+// ── Project dropdown ──────────────────────────────────────────────────────────
+
+const projDropdown = document.getElementById('proj-dropdown');
+
+function openProjDropdown(e, streamId, idx) {
+  const task = streamFor(streamId).tasks[idx];
+  projDropdown.innerHTML = '';
+  const noneItem = document.createElement('div');
+  noneItem.className = 'proj-dd-item proj-dd-none' + (!task.project ? ' active' : '');
+  noneItem.textContent = 'No project';
+  noneItem.addEventListener('click', () => {
+    const t = streamFor(streamId).tasks[idx];
+    delete t.project;
+    dbUpdate(t);
+    renderAll();
+    closeProjDropdown();
+  });
+  projDropdown.appendChild(noneItem);
+  PROJECTS.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'proj-dd-item' + (task.project === p.id ? ' active' : '');
+    const dot = document.createElement('div');
+    dot.className = 'proj-dd-dot';
+    dot.style.background = p.color;
+    item.appendChild(dot);
+    item.appendChild(document.createTextNode(p.name));
+    item.addEventListener('click', () => {
+      const t = streamFor(streamId).tasks[idx];
+      t.project = p.id;
+      dbUpdate(t);
+      renderAll();
+      closeProjDropdown();
+    });
+    projDropdown.appendChild(item);
+  });
+  projDropdown.style.display = 'block';
+  const rect = e.target.getBoundingClientRect();
+  const ddW = projDropdown.offsetWidth, ddH = projDropdown.offsetHeight;
+  projDropdown.style.display = '';
+  projDropdown.style.left = Math.min(rect.left, window.innerWidth - ddW - 8) + 'px';
+  projDropdown.style.top = Math.min(rect.bottom + 4, window.innerHeight - ddH - 8) + 'px';
+  projDropdown.classList.add('open');
+}
+
+function closeProjDropdown() { projDropdown.classList.remove('open'); }
+document.addEventListener('click', e => { if (!projDropdown.contains(e.target)) closeProjDropdown(); });
+
+// ── Blocker prompt ────────────────────────────────────────────────────────────
+
 const blockerPrompt = document.getElementById('blocker-prompt');
 const blockerInput = document.getElementById('blocker-prompt-input');
 let blockerTarget = null;
 
 function openBlockerPrompt(streamId, idx) {
   blockerTarget = { streamId, idx };
-  const task = streamFor(streamId).tasks[idx];
-  blockerInput.value = task.blocker || '';
-  // Position near ctx menu last pos
+  blockerInput.value = streamFor(streamId).tasks[idx].blocker || '';
   const left = parseInt(ctxMenu.style.left) || 100;
   const top = parseInt(ctxMenu.style.top) || 100;
   blockerPrompt.style.left = Math.min(left, window.innerWidth - 316) + 'px';
@@ -932,10 +989,10 @@ function closeBlockerPrompt() { blockerPrompt.classList.remove('open'); }
 document.getElementById('blocker-prompt-cancel').addEventListener('click', closeBlockerPrompt);
 document.getElementById('blocker-prompt-save').addEventListener('click', () => {
   if (!blockerTarget) return;
-  const st = streamFor(blockerTarget.streamId);
-  const task = st.tasks[blockerTarget.idx];
+  const task = streamFor(blockerTarget.streamId).tasks[blockerTarget.idx];
   task.status = 'blocked';
   task.blocker = blockerInput.value.trim() || task.label;
+  dbUpdate(task);
   closeBlockerPrompt();
   renderAll();
 });
@@ -944,7 +1001,8 @@ blockerInput.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeBlockerPrompt();
 });
 
-// Modal
+// ── Modal ─────────────────────────────────────────────────────────────────────
+
 document.getElementById('m-status').addEventListener('change', function() {
   const show = this.value === 'blocked';
   document.getElementById('m-blocker').style.display = show ? 'block' : 'none';
@@ -977,30 +1035,32 @@ document.getElementById('modal-save').addEventListener('click', () => {
   if (!name) { document.getElementById('m-name').focus(); return; }
   const stream = streamFor(document.getElementById('m-stream').value);
   const task = {
+    id: genId(),
     label: name,
     desc: document.getElementById('m-desc').value.trim(),
     status: document.getElementById('m-status').value,
-    owner: document.getElementById('m-owner').value.trim()
+    owner: document.getElementById('m-owner').value.trim(),
   };
   const blocker = document.getElementById('m-blocker').value.trim();
   if (task.status === 'blocked' && blocker) task.blocker = blocker;
   stream.tasks.push(task);
+  dbInsert(task, stream.id, stream.tasks.length - 1);
   closeModal();
   renderAll();
 });
 
-// Roadmap
-const PHASES = [
-  { label: 'Phase 1', date: 'May 8, 2026', milestone: 'MCP/CLI GA', owners: '', state: 'now' },
-  { label: 'Phase 2', date: 'May 12, 2026', milestone: 'SaaStr — Developer platform beta launch', owners: 'Lucas', state: 'upcoming' },
-  { label: 'Phase 3', date: 'Jun 2026', milestone: 'GA + Billing live for Developer Platform', owners: 'Lucas', state: 'upcoming' },
-  { label: 'Phase 4', date: 'Jul 2026', milestone: 'Sigma device launch — SDK ready on ship day. Voice API alpha launches.', owners: 'Lucas', state: 'upcoming' },
-  { label: 'Phase 5', date: 'Aug–Oct 2026', milestone: 'Voice API public beta — enterprise only', owners: 'Hayden / Lucas', state: 'upcoming' },
-  { label: 'Phase 6', date: 'Oct 2026', milestone: 'Bidirectional voice streaming + Capture SDK. Beyond Recall.ai.', owners: '', state: 'upcoming' },
-  { label: 'Phase 7', date: 'Nov–Dec 2026', milestone: 'Gamma device launch — voice + camera SDK. Vision AI joins Voice API.', owners: 'Lucas', state: 'upcoming' },
-  { label: 'Phase 8', date: 'Dec 2026', milestone: 'Voice API public launch', owners: 'Hayden', state: 'upcoming' },
-];
+// ── Roadmap (static) ──────────────────────────────────────────────────────────
 
+const PHASES = [
+  { label: 'Phase 1', date: 'May 8, 2026',    milestone: 'MCP/CLI GA',                                                            state: 'now' },
+  { label: 'Phase 2', date: 'May 12, 2026',   milestone: 'SaaStr — Developer platform beta launch',                               state: 'upcoming' },
+  { label: 'Phase 3', date: 'Jun 2026',        milestone: 'GA + Billing live for Developer Platform',                              state: 'upcoming' },
+  { label: 'Phase 4', date: 'Jul 2026',        milestone: 'Sigma device launch — SDK ready on ship day. Voice API alpha launches.', state: 'upcoming' },
+  { label: 'Phase 5', date: 'Aug–Oct 2026',   milestone: 'Voice API public beta — enterprise only',                               state: 'upcoming' },
+  { label: 'Phase 6', date: 'Oct 2026',        milestone: 'Bidirectional voice streaming + Capture SDK. Beyond Recall.ai.',        state: 'upcoming' },
+  { label: 'Phase 7', date: 'Nov–Dec 2026',   milestone: 'Gamma device launch — voice + camera SDK. Vision AI joins Voice API.',  state: 'upcoming' },
+  { label: 'Phase 8', date: 'Dec 2026',        milestone: 'Voice API public launch',                                               state: 'upcoming' },
+];
 const PHASE_COLORS = ['#2563eb','#7c3aed','#0891b2','#d97706','#db2777','#16a34a','#6366f1','#0891b2'];
 
 (function renderRoadmap() {
@@ -1024,7 +1084,16 @@ const PHASE_COLORS = ['#2563eb','#7c3aed','#0891b2','#d97706','#db2777','#16a34a
   });
 })();
 
-renderAll();
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
+(async function init() {
+  const panel = document.getElementById('task-panel');
+  panel.style.opacity = '0.4';
+  const loaded = await loadFromDB();
+  if (!loaded) await seedDB();
+  panel.style.opacity = '';
+  renderAll();
+})();
 </script>
 </body>
 </html>
