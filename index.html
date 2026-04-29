@@ -76,6 +76,11 @@
   .task-row:hover { background: var(--surface2); }
   .task-row.selected { background: #eff6ff; }
   .task-row.hidden { display: none; }
+  .drag-handle { width: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: grab; opacity: 0; transition: opacity 0.1s; color: var(--text3); user-select: none; font-size: 12px; }
+  .task-row:hover .drag-handle { opacity: 1; }
+  .task-row.dragging { opacity: 0.35; }
+  .task-row.drag-over-top { box-shadow: inset 0 2px 0 #3b82f6; }
+  .task-row.drag-over-bottom { box-shadow: inset 0 -2px 0 #3b82f6; }
 
   /* Batch checkbox */
   .row-cb { width: 14px; height: 14px; border-radius: 3px; border: 1.5px solid var(--border2); flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.1s; }
@@ -469,6 +474,13 @@ async function dbDelete(taskId) {
   if (error) console.error('Delete error:', error);
 }
 
+function dbUpdateOrder(task, streamId, sortOrder) {
+  if (!task.id) return;
+  db.from('tasks').update({ sort_order: sortOrder, stream_id: streamId })
+    .eq('id', task.id)
+    .then(({ error }) => { if (error) console.error('Order error:', error); });
+}
+
 async function loadFromDB() {
   const { data, error } = await db.from('tasks').select('*').order('sort_order').order('created_at');
   console.log('[DB] load result:', { data, error, count: data?.length });
@@ -527,6 +539,7 @@ db.channel('tasks-rt')
 const CYCLE = { todo: 'inprogress', inprogress: 'done', done: 'todo', blocked: 'todo' };
 let activeFilter = 'all';
 let selected = new Set();
+let dragSrc = null;
 
 function selKey(streamId, idx) { return `${streamId}:${idx}`; }
 
@@ -884,6 +897,56 @@ function renderAll() {
       row.appendChild(meta);
 
       row.addEventListener('contextmenu', e => { e.preventDefault(); openCtxMenu(e.clientX, e.clientY, stream.id, i); });
+
+      // Drag to reorder
+      const handle = document.createElement('div');
+      handle.className = 'drag-handle';
+      handle.textContent = '⠿';
+      handle.addEventListener('mousedown', () => { row.draggable = true; });
+      row.addEventListener('dragstart', e => {
+        dragSrc = { streamId: stream.id, idx: i };
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => row.classList.add('dragging'), 0);
+      });
+      row.addEventListener('dragend', () => {
+        row.draggable = false;
+        row.classList.remove('dragging');
+        document.querySelectorAll('.drag-over-top, .drag-over-bottom').forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
+        dragSrc = null;
+      });
+      row.addEventListener('dragover', e => {
+        if (!dragSrc) return;
+        e.preventDefault();
+        const mid = row.getBoundingClientRect().top + row.offsetHeight / 2;
+        document.querySelectorAll('.drag-over-top, .drag-over-bottom').forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
+        row.classList.add(e.clientY < mid ? 'drag-over-top' : 'drag-over-bottom');
+      });
+      row.addEventListener('dragleave', e => {
+        if (!row.contains(e.relatedTarget)) row.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
+      row.addEventListener('drop', e => {
+        e.preventDefault();
+        if (!dragSrc) return;
+        const isTop = row.classList.contains('drag-over-top');
+        row.classList.remove('drag-over-top', 'drag-over-bottom');
+        const tgtStreamId = stream.id;
+        const tgtIdx = i;
+        if (dragSrc.streamId === tgtStreamId && dragSrc.idx === tgtIdx) { dragSrc = null; return; }
+        const srcStream = streamFor(dragSrc.streamId);
+        const tgtStream = streamFor(tgtStreamId);
+        const [moved] = srcStream.tasks.splice(dragSrc.idx, 1);
+        let insertAt = tgtIdx;
+        if (dragSrc.streamId === tgtStreamId && dragSrc.idx < tgtIdx) insertAt--;
+        if (!isTop) insertAt++;
+        insertAt = Math.max(0, Math.min(insertAt, tgtStream.tasks.length));
+        tgtStream.tasks.splice(insertAt, 0, moved);
+        srcStream.tasks.forEach((t, idx) => dbUpdateOrder(t, srcStream.id, idx));
+        if (srcStream.id !== tgtStream.id) tgtStream.tasks.forEach((t, idx) => dbUpdateOrder(t, tgtStream.id, idx));
+        dragSrc = null;
+        renderAll();
+      });
+      row.prepend(handle);
+
       list.appendChild(row);
     });
   });
