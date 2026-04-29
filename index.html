@@ -187,6 +187,10 @@
   .phase-done .phase-dot { background: #16a34a; border-color: #16a34a; }
   .phase-done .phase-connector { background: #16a34a; }
   .phase-upcoming .phase-dot { border-color: var(--border2); }
+  .phase { cursor: pointer; border-radius: 8px; padding: 4px 0; transition: background 0.12s; }
+  .phase:hover { background: rgba(0,0,0,0.04); }
+  .phase-selected .phase-body { background: none; }
+  .phase-selected .phase-dot { box-shadow: 0 0 0 3px rgba(37,99,235,0.25) !important; }
 
   /* Project progress */
   .proj-progress { margin-bottom: 1.5rem; }
@@ -540,6 +544,7 @@ const CYCLE = { todo: 'inprogress', inprogress: 'done', done: 'todo', blocked: '
 let activeFilter = 'all';
 let selected = new Set();
 let dragSrc = null;
+let activeProjectFilter = null; // null = all, array of project IDs = phase filter
 
 function selKey(streamId, idx) { return `${streamId}:${idx}`; }
 
@@ -612,6 +617,7 @@ function startOwnerEdit(el, streamId, idx) {
 }
 
 function renderAll() {
+  renderRoadmap();
   const s = stats();
   document.getElementById('chip-blocked').textContent = s.blocked + ' blocker' + (s.blocked !== 1 ? 's' : '');
   document.getElementById('chip-inprogress').textContent = s.inprogress + ' in progress';
@@ -697,9 +703,13 @@ function renderAll() {
   const list = document.getElementById('task-list');
   list.innerHTML = '';
   STREAMS.forEach(stream => {
-    const visible = activeFilter === 'all' || activeFilter === stream.id;
-    const done = stream.tasks.filter(t => t.status === 'done').length;
-    const total = stream.tasks.length;
+    const streamVisible = activeFilter === 'all' || activeFilter === stream.id;
+    const filteredTasks = activeProjectFilter
+      ? stream.tasks.filter(t => activeProjectFilter.includes(t.project))
+      : stream.tasks;
+    const visible = streamVisible && (!activeProjectFilter || filteredTasks.length > 0);
+    const done = filteredTasks.filter(t => t.status === 'done').length;
+    const total = filteredTasks.length;
     const p = total ? Math.round(done / total * 100) : 0;
 
     const header = document.createElement('div');
@@ -751,8 +761,9 @@ function renderAll() {
     list.appendChild(prog);
 
     stream.tasks.forEach((t, i) => {
+      const taskVisible = streamVisible && (!activeProjectFilter || activeProjectFilter.includes(t.project));
       const row = document.createElement('div');
-      row.className = 'task-row' + (visible ? '' : ' hidden');
+      row.className = 'task-row' + (taskVisible ? '' : ' hidden');
       row.dataset.stream = stream.id;
       row.dataset.idx = i;
 
@@ -1137,30 +1148,33 @@ document.getElementById('modal-save').addEventListener('click', () => {
   renderAll();
 });
 
-// ── Roadmap (static) ──────────────────────────────────────────────────────────
+// ── Roadmap ───────────────────────────────────────────────────────────────────
 
 const PHASES = [
-  { label: 'Phase 1', date: 'May 8, 2026',    milestone: 'MCP/CLI GA',                                                            state: 'now' },
-  { label: 'Phase 2', date: 'May 12, 2026',   milestone: 'SaaStr — Developer platform beta launch',                               state: 'upcoming' },
-  { label: 'Phase 3', date: 'Jun 2026',        milestone: 'GA + Billing live for Developer Platform',                              state: 'upcoming' },
-  { label: 'Phase 4', date: 'Jul 2026',        milestone: 'Sigma device launch — SDK ready on ship day. Voice API alpha launches.', state: 'upcoming' },
-  { label: 'Phase 5', date: 'Aug–Oct 2026',   milestone: 'Voice API public beta — enterprise only',                               state: 'upcoming' },
-  { label: 'Phase 6', date: 'Oct 2026',        milestone: 'Bidirectional voice streaming + Capture SDK. Beyond Recall.ai.',        state: 'upcoming' },
-  { label: 'Phase 7', date: 'Nov–Dec 2026',   milestone: 'Gamma device launch — voice + camera SDK. Vision AI joins Voice API.',  state: 'upcoming' },
-  { label: 'Phase 8', date: 'Dec 2026',        milestone: 'Voice API public launch',                                               state: 'upcoming' },
+  { label: 'Phase 1', date: 'May 8, 2026',    milestone: 'MCP/CLI GA',                                                            state: 'now',      projects: ['mcp'] },
+  { label: 'Phase 2', date: 'May 12, 2026',   milestone: 'SaaStr — Developer platform beta launch',                               state: 'upcoming', projects: ['beta'] },
+  { label: 'Phase 3', date: 'Jun 2026',        milestone: 'GA + Billing live for Developer Platform',                              state: 'upcoming', projects: ['ga'] },
+  { label: 'Phase 4', date: 'Jul 2026',        milestone: 'Sigma device launch — SDK ready on ship day. Voice API alpha launches.', state: 'upcoming', projects: ['sigma', 'voice'] },
+  { label: 'Phase 5', date: 'Aug–Oct 2026',   milestone: 'Voice API public beta — enterprise only',                               state: 'upcoming', projects: ['voice'] },
+  { label: 'Phase 6', date: 'Oct 2026',        milestone: 'Bidirectional voice streaming + Capture SDK. Beyond Recall.ai.',        state: 'upcoming', projects: ['voice'] },
+  { label: 'Phase 7', date: 'Nov–Dec 2026',   milestone: 'Gamma device launch — voice + camera SDK. Vision AI joins Voice API.',  state: 'upcoming', projects: ['sigma', 'voice'] },
+  { label: 'Phase 8', date: 'Dec 2026',        milestone: 'Voice API public launch',                                               state: 'upcoming', projects: ['voice'] },
 ];
 const PHASE_COLORS = ['#2563eb','#7c3aed','#0891b2','#d97706','#db2777','#16a34a','#6366f1','#0891b2'];
 
-(function renderRoadmap() {
+function renderRoadmap() {
   const track = document.getElementById('roadmap-track');
+  track.innerHTML = '';
   PHASES.forEach((p, i) => {
     const color = PHASE_COLORS[i];
+    const isSelected = activeProjectFilter && p.projects.every(pr => activeProjectFilter.includes(pr)) && activeProjectFilter.length === p.projects.length;
     const el = document.createElement('div');
-    el.className = `phase phase-${p.state}`;
+    el.className = `phase phase-${p.state}${isSelected ? ' phase-selected' : ''}`;
+    if (isSelected) el.style.background = color + '12';
     el.innerHTML = `
       <div class="phase-connector" style="${p.state === 'done' ? 'background:' + color : ''}"></div>
       <div class="phase-dot-wrap">
-        <div class="phase-dot" style="border-color:${color};${p.state !== 'upcoming' ? 'background:' + color + ';box-shadow:0 0 0 3px ' + color + '33' : ''}"></div>
+        <div class="phase-dot" style="border-color:${color};${p.state !== 'upcoming' ? 'background:' + color + ';box-shadow:0 0 0 3px ' + color + '33' : ''}${isSelected ? ';box-shadow:0 0 0 4px ' + color + '44' : ''}"></div>
       </div>
       <div class="phase-body">
         <div class="phase-label" style="color:${color};">${p.label}</div>
@@ -1168,9 +1182,13 @@ const PHASE_COLORS = ['#2563eb','#7c3aed','#0891b2','#d97706','#db2777','#16a34a
         <div class="phase-milestone">${p.milestone}</div>
       </div>
     `;
+    el.addEventListener('click', () => {
+      activeProjectFilter = isSelected ? null : [...p.projects];
+      renderAll();
+    });
     track.appendChild(el);
   });
-})();
+}
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
