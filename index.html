@@ -118,11 +118,11 @@
   .task-label-done { color: var(--text3); text-decoration: line-through; }
   .task-label-blocked { color: #991b1b; }
   .task-label-input { font-size: 13px; width: 280px; min-width: 180px; line-height: 1.45; color: var(--text); flex-shrink: 0; border: 1px solid var(--border); border-radius: 4px; padding: 1px 4px; font-family: inherit; outline: none; box-sizing: border-box; }
-  .task-desc { font-size: 12px; flex: 1; color: var(--text2); line-height: 1.45; cursor: text; min-width: 0; white-space: normal; word-break: break-word; }
+  .task-desc { font-size: 12px; flex: 1; color: var(--text2); line-height: 1.45; cursor: text; min-width: 0; white-space: pre-wrap; word-break: break-word; }
   .task-desc:hover { color: var(--text); }
   .task-desc.empty { color: var(--text3); font-style: italic; }
   .task-desc.empty:hover { color: var(--text2); }
-  .task-desc-input { font-size: 12px; flex: 1; min-width: 0; color: var(--text); background: transparent; border: none; border-bottom: 1.5px solid #3b82f6; outline: none; font-family: inherit; padding: 0; width: 100%; }
+  .task-desc-input { font-size: 12px; flex: 1; min-width: 0; color: var(--text); background: transparent; border: none; border-bottom: 1.5px solid #3b82f6; outline: none; font-family: inherit; padding: 0; width: 100%; resize: none; overflow: hidden; line-height: 1.45; display: block; }
 
   .task-due { font-size: 11px; width: 72px; min-width: 72px; flex-shrink: 0; color: var(--text3); cursor: text; white-space: nowrap; }
   .task-due:hover { color: var(--text2); }
@@ -820,20 +820,28 @@ function renderAll() {
       desc.title = 'Click to edit description';
       desc.addEventListener('click', e => {
         e.stopPropagation();
-        const input = document.createElement('input');
-        input.className = 'task-desc-input';
-        input.value = t.desc || '';
-        input.placeholder = 'Add description…';
-        desc.replaceWith(input);
-        input.focus();
+        const ta = document.createElement('textarea');
+        ta.className = 'task-desc-input';
+        ta.value = t.desc || '';
+        ta.placeholder = 'Add description… (Shift+Return for new line)';
+        ta.rows = Math.max(1, (ta.value.match(/\n/g) || []).length + 1);
+        desc.replaceWith(ta);
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+        ta.addEventListener('input', () => {
+          ta.rows = Math.max(1, (ta.value.match(/\n/g) || []).length + 1);
+        });
         function commit() {
           const task = streamFor(stream.id).tasks[i];
-          task.desc = input.value.trim();
+          task.desc = ta.value.trim();
           dbUpdate(task);
           renderAll();
         }
-        input.addEventListener('blur', commit);
-        input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } if (e.key === 'Escape') renderAll(); });
+        ta.addEventListener('blur', commit);
+        ta.addEventListener('keydown', e => {
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commit(); }
+          if (e.key === 'Escape') { e.preventDefault(); renderAll(); }
+        });
       });
 
       const dueEl = document.createElement('div');
