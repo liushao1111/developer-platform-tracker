@@ -182,6 +182,7 @@
   .phase-date { font-size: 11px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
   .phase-milestone { font-size: 11px; color: var(--text2); line-height: 1.4; margin-bottom: 4px; }
   .phase-owner { font-size: 10px; color: var(--text3); }
+  .phase-date-reason { font-size: 10px; color: var(--text3); font-style: italic; margin-bottom: 4px; line-height: 1.3; }
   .phase-now { }
   .phase-now .phase-dot { background: #2563eb; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.2); }
   .phase-done .phase-dot { background: #16a34a; border-color: #16a34a; }
@@ -1153,7 +1154,7 @@ document.getElementById('modal-save').addEventListener('click', () => {
 // ── Roadmap ───────────────────────────────────────────────────────────────────
 
 const PHASES = [
-  { label: 'Phase 1', date: 'May 8, 2026',    milestone: 'MCP/CLI GA',                                                            state: 'now',      projects: ['mcp'] },
+  { label: 'Phase 1', date: 'May 12, 2026', originalDate: 'May 8, 2026', dateChangeReason: 'Bundle release with Plaud Teams', milestone: 'MCP/CLI GA', state: 'now', projects: ['mcp'] },
   { label: 'Phase 2', date: 'May 12, 2026',   milestone: 'SaaStr — Developer platform beta launch',                               state: 'upcoming', projects: ['beta'] },
   { label: 'Phase 3', date: 'Jun 2026',        milestone: 'GA + Billing live for Developer Platform',                              state: 'upcoming', projects: ['ga'] },
   { label: 'Phase 4', date: 'Jul 2026',        milestone: 'Sigma device launch — SDK ready on ship day. Voice API alpha launches.', state: 'upcoming', projects: ['sigma', 'voice'] },
@@ -1180,7 +1181,10 @@ function renderRoadmap() {
       </div>
       <div class="phase-body">
         <div class="phase-label" style="color:${color};">${p.label}</div>
-        <div class="phase-date">${p.date}</div>
+        ${p.originalDate
+          ? `<div class="phase-date"><span style="text-decoration:line-through;color:var(--text3);font-weight:400;">${p.originalDate}</span> <span style="color:${color}">${p.date}</span></div>
+             <div class="phase-date-reason">↑ ${p.dateChangeReason}</div>`
+          : `<div class="phase-date">${p.date}</div>`}
         <div class="phase-milestone">${p.milestone}</div>
       </div>
     `;
