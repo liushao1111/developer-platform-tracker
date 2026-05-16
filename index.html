@@ -936,16 +936,20 @@ function renderAll() {
 
       row.appendChild(cb);
       const proj = PROJECTS.find(p => p.id === t.project);
+      const phaseIdx = proj ? PHASES.findIndex(ph => ph.projects.includes(proj.id)) : -1;
       const projTag = document.createElement('span');
-      if (proj) {
+      if (phaseIdx >= 0) {
+        const ph = PHASES[phaseIdx];
+        const color = PHASE_COLORS[phaseIdx];
         projTag.className = 'task-proj';
-        projTag.textContent = proj.name;
-        projTag.style.background = proj.color + '18';
-        projTag.style.color = proj.color;
-        projTag.style.borderColor = proj.color + '40';
+        projTag.textContent = ph.label;
+        projTag.title = `${ph.label} · ${proj.name} (${ph.date})`;
+        projTag.style.background = color + '18';
+        projTag.style.color = color;
+        projTag.style.borderColor = color + '40';
       } else {
         projTag.className = 'task-proj task-proj-empty';
-        projTag.textContent = 'no project';
+        projTag.textContent = 'no phase';
       }
       projTag.addEventListener('click', e => { e.stopPropagation(); openProjDropdown(e, stream.id, i); });
 
