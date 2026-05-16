@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plaud Developer Platform — Launched Feature Insights</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --surface2: #f2f1ee;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --text: #1a1a18;
+    --text2: #6b6b66;
+    --text3: #9a9a94;
+    --green-bg: #f0fdf4; --green-border: #86efac; --green-text: #14532d;
+    --amber-bg: #fffbeb; --amber-border: #fcd34d; --amber-text: #78350f;
+    --red-bg: #fef2f2; --red-border: #fca5a5; --red-text: #7f1d1d;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  body {
+    font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1.5rem;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .page { max-width: 1080px; margin: 0 auto; }
+
+  /* Header */
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 1.5rem; }
+  .page-title { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+  .page-sub { font-size: 13px; color: var(--text2); margin-top: 3px; }
+  .top-nav-link { font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border2); background: var(--surface); color: var(--text2); text-decoration: none; transition: all 0.1s; white-space: nowrap; }
+  .top-nav-link:hover { border-color: var(--text); color: var(--text); }
+
+  /* Summary stat row */
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+  .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; color: var(--text); font-variant-numeric: tabular-nums; }
+  .stat-sub { font-size: 11px; color: var(--text2); margin-top: 4px; }
+
+  /* Section label */
+  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 12px; margin-top: 0.5rem; }
+
+  /* Feature cards */
+  .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 16px; }
+  .feature-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+  .feature-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .feature-name { font-size: 17px; font-weight: 600; color: var(--text); }
+  .feature-launched { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 9px; border-radius: 20px; background: var(--green-bg); border: 1px solid var(--green-border); color: var(--green-text); }
+  .feature-desc { font-size: 13px; color: var(--text2); margin-bottom: 16px; line-height: 1.5; }
+
+  /* Metric grid */
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 18px; }
+  .metric { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; }
+  .metric.placeholder { background: var(--surface); border-style: dashed; }
+  .metric-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 4px; }
+  .metric-value { font-size: 22px; font-weight: 600; letter-spacing: -0.4px; color: var(--text); font-variant-numeric: tabular-nums; }
+  .metric.placeholder .metric-value { color: var(--text3); }
+  .metric-sub { font-size: 10px; color: var(--text2); margin-top: 3px; }
+
+  /* Insight list */
+  .insight-list { border-top: 1px solid var(--border); padding-top: 14px; margin-bottom: 14px; }
+  .insight { display: flex; gap: 12px; padding: 6px 0; font-size: 13px; align-items: flex-start; }
+  .insight + .insight { border-top: 1px solid var(--border); }
+  .insight-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); width: 140px; min-width: 140px; flex-shrink: 0; padding-top: 2px; }
+  .insight-value { color: var(--text); line-height: 1.5; flex: 1; }
+  .insight-value strong { font-weight: 600; }
+
+  /* Dashboard link */
+  .dashboard-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border2); background: var(--surface); color: var(--text2); text-decoration: none; transition: all 0.1s; }
+  .dashboard-link:hover { border-color: var(--text); color: var(--text); }
+
+  /* Date footer */
+  .footer-note { font-size: 11px; color: var(--text3); margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border); text-align: center; }
+
+  /* Updated-at badge */
+  .updated-badge { font-size: 11px; color: var(--text3); display: inline-flex; align-items: center; gap: 5px; }
+  .updated-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--text3); }
+  .updated-badge.live::before { background: #16a34a; }
+  .updated-badge.stale::before { background: #d97706; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">Launched feature business insights</div>
+      <div class="page-sub">How shipped developer platform features are performing · <span class="updated-badge" id="updated-badge">cached snapshot</span></div>
+    </div>
+    <a class="top-nav-link" href="index.html">← Launch tracker</a>
+  </div>
+
+  <!-- Developer Platform Beta -->
+  <div class="feature-card">
+    <div class="feature-header">
+      <div class="feature-dot" style="background:#2563eb"></div>
+      <div class="feature-name">Developer Platform Beta</div>
+      <div class="feature-launched">✓ Launched May 12, 2026</div>
+    </div>
+    <div class="feature-desc">
+      SDK + Developer Console + landing page at <strong>dev.plaud.ai</strong>, launched at SaaStr.
+      Gated beta access with template app shipped to each customer.
+    </div>
+
+    <div class="metric-grid">
+      <div class="metric">
+        <div class="metric-label">Total visits</div>
+        <div class="metric-value" id="m-visits">1,168</div>
+        <div class="metric-sub">last 7 days</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Leads</div>
+        <div class="metric-value" id="m-leads">21</div>
+        <div class="metric-sub">contact form submits</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Conversion rate</div>
+        <div class="metric-value" id="m-conv">1.80%</div>
+        <div class="metric-sub">submits ÷ visits</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Pricing clicks</div>
+        <div class="metric-value" id="m-pricing">17</div>
+        <div class="metric-sub" id="m-pricing-sub">14 PAYG · 1 Pro · 1 Enterprise</div>
+      </div>
+    </div>
+
+    <div class="insight-list">
+      <div class="insight">
+        <div class="insight-label">Top traffic sources</div>
+        <div class="insight-value" id="i-referrers"><strong>plaud.ai (212)</strong> → Google organic (121) → Twitter/t.co (19) → LinkedIn (14). ~179 visitors arrive with no referrer — UTM coverage on outbound plaud.ai links needs tightening.</div>
+      </div>
+      <div class="insight">
+        <div class="insight-label">Developer profile</div>
+        <div class="insight-value" id="i-profile"><strong>macOS leads OS share (213)</strong> ahead of Windows (169) and iOS (134); Chrome accounts for ~60% of browsers. Audience matches expected developer ICP.</div>
+      </div>
+      <div class="insight">
+        <div class="insight-label">Best converting page</div>
+        <div class="insight-value"><strong>/contact converts at 43%</strong> (3 of 7) vs. 3.3% for the homepage — high-intent visitors who reach /contact should be the next acquisition focus.</div>
+      </div>
+      <div class="insight">
+        <div class="insight-label">Funnel leak</div>
+        <div class="insight-value">Of 51 /contact visitors, <strong>65% start the form but only 35% submit</strong>. Median time between started → submit clicked is 1m 22s. Top thing to fix.</div>
+      </div>
+      <div class="insight">
+        <div class="insight-label">Top outbound</div>
+        <div class="insight-value" id="i-outbound"><strong>docs (171 clicks)</strong> ≫ GitHub (16), hardware store (9). Developers want docs — invest there first.</div>
+      </div>
+      <div class="insight">
+        <div class="insight-label">Engineering health</div>
+        <div class="insight-value" id="i-health">Clean: 1 JS exception · 1 form validation error · 1 stray /undefined 404 across the week.</div>
+      </div>
+    </div>
+
+    <a class="dashboard-link" href="https://us.posthog.com/project/136520/dashboard/1580736" target="_blank">View full PostHog dashboard ↗</a>
+  </div>
+
+  <!-- MCP/CLI -->
+  <div class="feature-card">
+    <div class="feature-header">
+      <div class="feature-dot" style="background:#7c3aed"></div>
+      <div class="feature-name">MCP / CLI</div>
+      <div class="feature-launched">✓ Launched May 12, 2026</div>
+    </div>
+    <div class="feature-desc">
+      <strong>plaud-mcp</strong> server and <strong>plaud-cli</strong> — MCP tool surface, login, and data access for AI coding agents.
+      Released GA bundled with the Plaud Teams launch.
+    </div>
+
+    <div class="metric-grid">
+      <div class="metric">
+        <div class="metric-label">Total adoption</div>
+        <div class="metric-value">1,561</div>
+        <div class="metric-sub">MCP + CLI, cumulative</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">MCP server</div>
+        <div class="metric-value">693</div>
+        <div class="metric-sub">44% of total</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">MCP local</div>
+        <div class="metric-value">636</div>
+        <div class="metric-sub">41% of total</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">CLI</div>
+        <div class="metric-value">232</div>
+        <div class="metric-sub">15% of total</div>
+      </div>
+    </div>
+
+    <div class="insight-list">
+      <div class="insight">
+        <div class="insight-label">Status</div>
+        <div class="insight-value">GA on May 12, 2026, bundled with the Plaud Teams release.</div>
+      </div>
+      <div class="insight">
+        <div class="insight-label">Distribution</div>
+        <div class="insight-value">Available via npm (<code>@plaud/mcp</code>, <code>@plaud/cli</code>) and the Quickstart guide on docs.plaud.ai.</div>
+      </div>
+      <div class="insight">
+        <div class="insight-label">Adoption mix</div>
+        <div class="insight-value"><strong>MCP server leads (693)</strong>, narrowly ahead of MCP local (636); CLI trails at 232. Hosted MCP and local install are roughly tied — both surfaces matter — while CLI usage is ~⅓ of either.</div>
+      </div>
+      <div class="insight">
+        <div class="insight-label">Next</div>
+        <div class="insight-value">Layer PostHog instrumentation on top of the Treasure Data totals for finer breakdowns — daily MCP tool invocations, login completions, and command-frequency.</div>
+      </div>
+    </div>
+
+    <a class="dashboard-link" href="https://metabase.nicebuild.click/dashboard/2-treasure-data" target="_blank">View Treasure Data dashboard ↗</a>
+  </div>
+
+  <div class="footer-note">
+    Beta numbers pulled live from the <a href="https://us.posthog.com/project/136520/dashboard/1580736" target="_blank">PostHog Embedded Landing Page dashboard</a>. Rolling 7-day window. Cached at the edge for 5 min.
+  </div>
+
+</div>
+
+<script>
+(async () => {
+  const $ = (id) => document.getElementById(id);
+  const badge = $('updated-badge');
+  const fmt = (n) => n == null ? '—' : Number(n).toLocaleString();
+  const renderList = (items, fmt = (x) => `${x.label} (${x.value.toLocaleString()})`) =>
+    items.map(fmt).join(' · ');
+
+  try {
+    badge.textContent = 'refreshing…';
+    const r = await fetch('/api/insights', { cache: 'no-cache' });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      badge.className = 'updated-badge stale';
+      badge.textContent = err.error ? `live data unavailable (${err.error.slice(0, 40)})` : 'live data unavailable';
+      return;
+    }
+    const data = await r.json();
+    const b = data.beta || {};
+
+    // Top-line metrics
+    if (b.totalVisits != null) $('m-visits').textContent = fmt(b.totalVisits);
+    if (b.leads != null) $('m-leads').textContent = fmt(b.leads);
+    if (b.conversionRate != null) $('m-conv').textContent = Number(b.conversionRate).toFixed(2) + '%';
+    if (b.pricingClicks != null) $('m-pricing').textContent = fmt(b.pricingClicks);
+
+    // Pricing tier breakdown
+    if (b.pricingTiers && b.pricingTiers.length) {
+      $('m-pricing-sub').textContent = b.pricingTiers
+        .map(t => `${t.value} ${t.label}`).join(' · ');
+    }
+
+    const cleanReferrer = (l) => {
+      const s = String(l);
+      const androidMatch = s.match(/^android-app:\/\/com\.([^./]+)/);
+      if (androidMatch) {
+        const app = androidMatch[1];
+        const name = app.charAt(0).toUpperCase() + app.slice(1);
+        return `${name} (Android app)`;
+      }
+      return s.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '');
+    };
+
+    const titleCase = (l) => {
+      const overrides = { github: 'GitHub', docs: 'Docs', social: 'Social' };
+      const key = String(l).toLowerCase();
+      if (overrides[key]) return overrides[key];
+      return String(l).split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    };
+
+    // Referrers
+    if (b.referrers && b.referrers.length) {
+      const top = b.referrers.filter(x => x.label).slice(0, 4);
+      const none = b.referrers.find(x => !x.label);
+      const list = top.map(r => `<strong>${cleanReferrer(r.label)} (${r.value.toLocaleString()})</strong>`).join(' → ');
+      const tail = none ? ` · ${none.value.toLocaleString()} with no referrer` : '';
+      $('i-referrers').innerHTML = list + tail;
+    }
+
+    // OS / browser profile
+    if (b.oses && b.oses.length) {
+      const top = b.oses.slice(0, 3).map(o => `${o.label} (${o.value.toLocaleString()})`).join(' · ');
+      const topBrowser = b.browsers && b.browsers[0];
+      const totalBrowsers = (b.browsers || []).reduce((s, x) => s + x.value, 0);
+      const browserPct = topBrowser && totalBrowsers ? Math.round(topBrowser.value / totalBrowsers * 100) : null;
+      const browserStr = topBrowser ? ` ${topBrowser.label} accounts for ${browserPct}% of browsers.` : '';
+      $('i-profile').innerHTML = `<strong>OS share: ${top}</strong>.${browserStr}`;
+    }
+
+    // Outbound
+    if (b.outbound && b.outbound.length) {
+      const top = b.outbound[0];
+      const rest = b.outbound.slice(1, 4).map(o => `${titleCase(o.label)} (${o.value.toLocaleString()})`).join(', ');
+      $('i-outbound').innerHTML = `<strong>${titleCase(top.label)} (${top.value.toLocaleString()} clicks)</strong>${rest ? ' ≫ ' + rest : ''}.`;
+    }
+
+    // Health
+    if (b.exceptions != null) {
+      $('i-health').textContent = b.exceptions === 0
+        ? 'Clean: 0 JS exceptions across the 7-day window.'
+        : `${b.exceptions} JS exception${b.exceptions === 1 ? '' : 's'} across the 7-day window.`;
+    }
+
+    // Updated stamp
+    const d = new Date(data.asOf);
+    badge.className = 'updated-badge live';
+    badge.textContent = 'live · updated ' + d.toLocaleString();
+  } catch (err) {
+    badge.className = 'updated-badge stale';
+    badge.textContent = 'live data unavailable';
+  }
+})();
+</script>
+
+</body>
+</html>
