@@ -1202,14 +1202,12 @@ document.getElementById('modal-save').addEventListener('click', () => {
 const PHASES = [
   { label: 'Phase 1', date: 'May 12, 2026', originalDate: 'May 8, 2026', dateChangeReason: 'Bundle release with Plaud Teams', milestone: 'MCP/CLI GA', state: 'done', projects: ['mcp'] },
   { label: 'Phase 2', date: 'May 12, 2026',   milestone: 'SaaStr — Developer platform beta launch',                               state: 'done', projects: ['beta'] },
-  { label: 'Phase 3', date: 'Jun 2026',        milestone: 'GA + Billing live for Developer Platform',                              state: 'now', projects: ['ga'] },
+  { label: 'Phase 3', date: 'Jun 2026',        milestone: 'Developer Platform GA with billing and OAuth',                          state: 'now', projects: ['ga'] },
   { label: 'Phase 4', date: 'Sep 2026',        milestone: 'Developer Platform v2 GA — Sigma SDK, Voice AI, and Desktop SDK.',         state: 'upcoming', projects: ['sigma', 'voice', 'desktop'] },
-  { label: 'Phase 5', date: 'Aug–Oct 2026',   milestone: 'Voice API public beta — enterprise only',                               state: 'upcoming', projects: ['voice'] },
-  { label: 'Phase 6', date: 'Oct 2026',        milestone: 'Bidirectional voice streaming + Capture SDK. Beyond Recall.ai.',        state: 'upcoming', projects: ['voice'] },
-  { label: 'Phase 7', date: 'Nov–Dec 2026',   milestone: 'Gamma device launch — voice + camera SDK. Vision AI joins Voice API.',  state: 'upcoming', projects: ['sigma', 'voice'] },
-  { label: 'Phase 8', date: 'Dec 2026',        milestone: 'Voice API public launch',                                               state: 'upcoming', projects: ['voice'] },
+  { label: 'Phase 5', date: 'Oct 2026',        milestone: 'Bidirectional voice streaming + Capture SDK. Beyond Recall.ai.',        state: 'upcoming', projects: ['voice'] },
+  { label: 'Phase 6', date: 'Dec 2026',        milestone: 'Voice API public launch',                                               state: 'upcoming', projects: ['voice'] },
 ];
-const PHASE_COLORS = ['#2563eb','#7c3aed','#0891b2','#d97706','#db2777','#16a34a','#6366f1','#0891b2'];
+const PHASE_COLORS = ['#2563eb','#7c3aed','#0891b2','#d97706','#db2777','#16a34a'];
 
 function renderRoadmap() {
   const track = document.getElementById('roadmap-track');
