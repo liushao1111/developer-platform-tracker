@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Plaud Developer Platform — Launch Tracker</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -205,6 +204,13 @@
   .proj-card-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
   .proj-card-fill { height: 4px; border-radius: 2px; transition: width 0.3s ease; }
 
+  /* Launched badge on project cards */
+  .launched-badge { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: var(--green-bg); border: 1px solid var(--green-border); color: var(--green-text); text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; flex-shrink: 0; }
+
+  /* Top nav link */
+  .top-nav-link { font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border2); background: var(--surface); color: var(--text2); text-decoration: none; transition: all 0.1s; white-space: nowrap; }
+  .top-nav-link:hover { border-color: var(--text); color: var(--text); }
+
   /* Project tag in task rows */
   .task-proj { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; cursor: pointer; border: 1px solid transparent; transition: opacity 0.1s; }
   .task-proj:hover { opacity: 0.8; }
@@ -258,6 +264,7 @@
       <span class="chip chip-red" id="chip-blocked">0 blockers</span>
       <span class="chip chip-amber" id="chip-inprogress">0 in progress</span>
       <span class="chip chip-green" id="chip-done">0 done</span>
+      <a class="top-nav-link" href="insights.html">📊 Launched insights →</a>
     </div>
   </div>
 
@@ -355,19 +362,32 @@
 </div>
 
 <script>
-// Supabase client
-const { createClient } = supabase;
-const db = createClient(
-  'https://bfkrwpqdgyotwpndwmid.supabase.co',
-  'sb_publishable_ScRO_cZr9iYdzE6HKAOskg_XaN6M5Os'
-);
+// Plain-fetch Supabase REST client (avoids supabase-js auth side-effects with
+// publishable keys that were causing 401s in the browser).
+const SUPABASE_URL = 'https://bfkrwpqdgyotwpndwmid.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ScRO_cZr9iYdzE6HKAOskg_XaN6M5Os';
+const REST = SUPABASE_URL + '/rest/v1/tasks';
+const HDRS = {
+  'apikey': SUPABASE_KEY,
+  'Authorization': 'Bearer ' + SUPABASE_KEY,
+  'Content-Type': 'application/json',
+  'Prefer': 'return=minimal',
+};
+// Belt-and-suspenders: nuke any stale supabase-js session data on load.
+try {
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const k = localStorage.key(i);
+    if (k && (k.startsWith('sb-') || k.includes('supabase'))) localStorage.removeItem(k);
+  }
+} catch (_) {}
 
 const PROJECTS = [
-  { id: 'mcp',   name: 'MCP/CLI',               color: '#7c3aed' },
-  { id: 'beta',  name: 'Dev Platform Beta',      color: '#2563eb' },
+  { id: 'mcp',   name: 'MCP/CLI',               color: '#7c3aed', launched: true, launchedAt: 'May 12, 2026' },
+  { id: 'beta',  name: 'Dev Platform Beta',      color: '#2563eb', launched: true, launchedAt: 'May 12, 2026' },
   { id: 'ga',    name: 'Dev Platform GA',        color: '#16a34a' },
   { id: 'voice', name: 'Voice API',              color: '#d97706' },
   { id: 'sigma', name: 'Sigma Device Launch',    color: '#db2777' },
+  { id: 'desktop', name: 'Desktop SDK',          color: '#475569' },
 ];
 
 const STREAMS = [
@@ -446,8 +466,8 @@ const STREAMS = [
 
 function genId() { return crypto.randomUUID(); }
 
-async function dbInsert(task, streamId, sortOrder) {
-  const { error } = await db.from('tasks').insert({
+function taskRow(task, streamId, sortOrder) {
+  return {
     id: task.id,
     stream_id: streamId,
     label: task.label,
@@ -457,57 +477,74 @@ async function dbInsert(task, streamId, sortOrder) {
     project: task.project || null,
     description: task.desc || null,
     blocker: task.blocker || null,
-    sort_order: sortOrder,
-  });
-  if (error) console.error('Insert error:', error);
+    ...(sortOrder !== undefined ? { sort_order: sortOrder } : {}),
+  };
+}
+
+async function dbInsert(task, streamId, sortOrder) {
+  try {
+    const r = await fetch(REST, { method: 'POST', headers: HDRS, body: JSON.stringify(taskRow(task, streamId, sortOrder)) });
+    if (!r.ok) console.error('Insert error:', r.status, await r.text());
+  } catch (e) { console.error('Insert error:', e); }
 }
 
 async function dbUpdate(task) {
   if (!task.id) return;
-  const { error } = await db.from('tasks').update({
-    label: task.label,
-    status: task.status,
-    owner: task.owner || null,
-    due: task.due || null,
-    project: task.project || null,
-    description: task.desc || null,
-    blocker: task.blocker || null,
-  }).eq('id', task.id);
-  if (error) console.error('Update error:', error);
+  try {
+    const body = JSON.stringify({
+      label: task.label, status: task.status,
+      owner: task.owner || null, due: task.due || null,
+      project: task.project || null, description: task.desc || null,
+      blocker: task.blocker || null,
+    });
+    const r = await fetch(`${REST}?id=eq.${encodeURIComponent(task.id)}`, { method: 'PATCH', headers: HDRS, body });
+    if (!r.ok) console.error('Update error:', r.status, await r.text());
+  } catch (e) { console.error('Update error:', e); }
 }
 
 async function dbDelete(taskId) {
-  const { error } = await db.from('tasks').delete().eq('id', taskId);
-  if (error) console.error('Delete error:', error);
+  try {
+    const r = await fetch(`${REST}?id=eq.${encodeURIComponent(taskId)}`, { method: 'DELETE', headers: HDRS });
+    if (!r.ok) console.error('Delete error:', r.status, await r.text());
+  } catch (e) { console.error('Delete error:', e); }
 }
 
 function dbUpdateOrder(task, streamId, sortOrder) {
   if (!task.id) return;
-  db.from('tasks').update({ sort_order: sortOrder, stream_id: streamId })
-    .eq('id', task.id)
-    .then(({ error }) => { if (error) console.error('Order error:', error); });
+  const body = JSON.stringify({ sort_order: sortOrder, stream_id: streamId });
+  fetch(`${REST}?id=eq.${encodeURIComponent(task.id)}`, { method: 'PATCH', headers: HDRS, body })
+    .then(r => { if (!r.ok) r.text().then(t => console.error('Order error:', r.status, t)); })
+    .catch(e => console.error('Order error:', e));
 }
 
 async function loadFromDB() {
-  const { data, error } = await db.from('tasks').select('*').order('sort_order').order('created_at');
-  console.log('[DB] load result:', { data, error, count: data?.length });
-  if (error) { console.error('Load error:', error); return false; }
-  if (!data || data.length === 0) return false;
-  STREAMS.forEach(s => s.tasks = []);
-  data.forEach(row => {
-    const stream = STREAMS.find(s => s.id === row.stream_id);
-    if (stream) stream.tasks.push({
-      id: row.id,
-      label: row.label,
-      status: row.status,
-      owner: row.owner,
-      due: row.due,
-      project: row.project,
-      desc: row.description,
-      blocker: row.blocker,
+  try {
+    const r = await fetch(`${REST}?select=*&order=sort_order.asc,created_at.asc`, { headers: HDRS });
+    if (!r.ok) {
+      const t = await r.text();
+      console.error('Load error:', r.status, t);
+      showLoadError(`HTTP ${r.status} from Supabase. ${t.slice(0, 200)}`);
+      return false;
+    }
+    const data = await r.json();
+    console.log('[DB] loaded', data.length, 'tasks');
+    if (!data || data.length === 0) return false;
+    STREAMS.forEach(s => s.tasks = []);
+    data.forEach(row => {
+      const stream = STREAMS.find(s => s.id === row.stream_id);
+      if (stream) stream.tasks.push({
+        id: row.id, label: row.label, status: row.status,
+        owner: row.owner, due: row.due, project: row.project,
+        desc: row.description, blocker: row.blocker,
+      });
     });
-  });
-  return true;
+    hideLoadError();
+    return true;
+  } catch (e) {
+    console.error('Load error:', e);
+    showLoadError(String(e));
+    return false;
+  }
 }
 
 async function seedDB() {
@@ -516,30 +553,30 @@ async function seedDB() {
   STREAMS.forEach(stream => {
     stream.tasks.forEach(task => {
       task.id = genId();
-      rows.push({
-        id: task.id, stream_id: stream.id, label: task.label,
-        status: task.status, owner: task.owner || null, due: task.due || null,
-        project: task.project || null, description: task.desc || null,
-        blocker: task.blocker || null, sort_order: order++,
-      });
+      rows.push(taskRow(task, stream.id, order++));
     });
   });
-  const { error } = await db.from('tasks').insert(rows);
-  if (error) console.error('Seed error:', error);
+  try {
+    const r = await fetch(REST, { method: 'POST', headers: HDRS, body: JSON.stringify(rows) });
+    if (!r.ok) console.error('Seed error:', r.status, await r.text());
+  } catch (e) { console.error('Seed error:', e); }
 }
 
-// Real-time: reload when a remote change arrives (debounced, skip if user is typing)
-let reloadTimer = null;
-db.channel('tasks-rt')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
-    clearTimeout(reloadTimer);
-    reloadTimer = setTimeout(async () => {
-      if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
-      await loadFromDB();
-      renderAll();
-    }, 600);
-  })
-  .subscribe();
+function showLoadError(msg) {
+  let el = document.getElementById('db-error');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'db-error';
+    el.style.cssText = 'background:#fef2f2;border:1px solid #fca5a5;color:#7f1d1d;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px;';
+    const page = document.querySelector('.page');
+    page.insertBefore(el, page.firstChild);
+  }
+  el.textContent = 'Could not load tasks from Supabase: ' + msg + ' — showing local seed data. Edits made here will not persist.';
+}
+function hideLoadError() {
+  const el = document.getElementById('db-error');
+  if (el) el.remove();
+}
 
 // ── App state ─────────────────────────────────────────────────────────────────
 
@@ -641,6 +678,7 @@ function renderAll() {
       <div class="proj-card-header">
         <div class="proj-card-dot" style="background:${p.color}"></div>
         <div class="proj-card-name">${p.name}</div>
+        ${p.launched ? `<span class="launched-badge" title="Launched ${p.launchedAt}">✓ Launched</span>` : ''}
         <div class="proj-card-count">${done}/${total}</div>
       </div>
       <div class="proj-card-bar"><div class="proj-card-fill" style="width:${pct}%;background:${p.color}"></div></div>
@@ -1162,10 +1200,10 @@ document.getElementById('modal-save').addEventListener('click', () => {
 // ── Roadmap ───────────────────────────────────────────────────────────────────
 
 const PHASES = [
-  { label: 'Phase 1', date: 'May 12, 2026', originalDate: 'May 8, 2026', dateChangeReason: 'Bundle release with Plaud Teams', milestone: 'MCP/CLI GA', state: 'now', projects: ['mcp'] },
-  { label: 'Phase 2', date: 'May 12, 2026',   milestone: 'SaaStr — Developer platform beta launch',                               state: 'upcoming', projects: ['beta'] },
-  { label: 'Phase 3', date: 'Jun 2026',        milestone: 'GA + Billing live for Developer Platform',                              state: 'upcoming', projects: ['ga'] },
-  { label: 'Phase 4', date: 'Jul 2026',        milestone: 'Sigma device launch — SDK ready on ship day. Voice API alpha launches.', state: 'upcoming', projects: ['sigma', 'voice'] },
+  { label: 'Phase 1', date: 'May 12, 2026', originalDate: 'May 8, 2026', dateChangeReason: 'Bundle release with Plaud Teams', milestone: 'MCP/CLI GA', state: 'done', projects: ['mcp'] },
+  { label: 'Phase 2', date: 'May 12, 2026',   milestone: 'SaaStr — Developer platform beta launch',                               state: 'done', projects: ['beta'] },
+  { label: 'Phase 3', date: 'Jun 2026',        milestone: 'GA + Billing live for Developer Platform',                              state: 'now', projects: ['ga'] },
+  { label: 'Phase 4', date: 'Sep 2026',        milestone: 'Developer Platform v2 GA — Sigma SDK, Voice AI, and Desktop SDK.',         state: 'upcoming', projects: ['sigma', 'voice', 'desktop'] },
   { label: 'Phase 5', date: 'Aug–Oct 2026',   milestone: 'Voice API public beta — enterprise only',                               state: 'upcoming', projects: ['voice'] },
   { label: 'Phase 6', date: 'Oct 2026',        milestone: 'Bidirectional voice streaming + Capture SDK. Beyond Recall.ai.',        state: 'upcoming', projects: ['voice'] },
   { label: 'Phase 7', date: 'Nov–Dec 2026',   milestone: 'Gamma device launch — voice + camera SDK. Vision AI joins Voice API.',  state: 'upcoming', projects: ['sigma', 'voice'] },
